@@ -40,13 +40,165 @@ class Card(ABC):
     def power(self, player):
         pass
 
+# Subclasses for each color
+class GoldCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Gold, value)
+        self.good = True
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        print(f"Receiving {player.flight.goods} cards")
+        if isinstance(player, Player):
+            player.cardCount += player.flight.goods
+        else:
+            cardsReceived = player.flight.goods
+            for _ in range(cardsReceived):
+                cardInput = input("Enter a card to add to AI player's hand:\n")
+                try:
+                    colorInput, valueInput = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    newCard = COLOR_TO_CLASS[color](value)
+                    player.cards.append(newCard)
+                except Exception:
+                    print("Invalid input, try again\n")
+
+class SilverCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Silver, value)
+        self.good = True
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        for p in game.players:
+            if p.flight.goods > 0:
+                p.cardCount += 1
+        if game.AIPlayer.flight.goods > 0:
+            while True:
+                cardInput = input("Enter a card to add to AI player's hand:\n")
+                try:
+                    colorInput, valueInput = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    newCard = COLOR_TO_CLASS[color](value)
+                    game.AIPlayer.cards.append(newCard)
+                    break
+                except Exception:
+                    print("Invalid input, try again\n")
+
+class CopperCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Copper, value)
+        self.good = True
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        while True:
+            cardInput = input("Enter the card that is drawn from the deck:\n")
+            try:
+                colorInput, valueInput = cardInput.split(" ")
+                color = Color(colorInput.capitalize())
+                value = Value(int(valueInput))
+                newCard: Card = COLOR_TO_CLASS[color](value)
+                break
+            except Exception:
+                print("Invalid input, try again\n")
+        newCard.power(player, game)
+
+class BronzeCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Bronze, value)
+        self.good = True
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        anteCards = game.ante.cards
+        anteCards.sort(key=lambda card: card.value)
+        cards = 0
+        drawnCards = []
+        while cards < 2 and anteCards:
+            drawnCards.append(anteCards.pop(0))
+            cards += 1
+        if isinstance(player, Player):
+            player.cardCount += len(drawnCards)
+        else:
+            player.cards.extend(drawnCards)
+
+class BrassCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Brass, value)
+        self.good = True
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        pass
+
+class RedCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Red, value)
+        self.good = False
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        pass
+
+class BlackCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Black, value)
+        self.good = False
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        pass
+
+class GreenCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Green, value)
+        self.good = False
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        pass
+
+class WhiteCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.White, value)
+        self.good = False
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        pass
+
+class BlueCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Blue, value)
+        self.good = False
+    
+    def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
+        print(f"{self.color} dragon triggers...")
+        pass
+
+COLOR_TO_CLASS: Card = {
+    Color.Gold: GoldCard,
+    Color.Silver: SilverCard,
+    Color.Copper: CopperCard,
+    Color.Bronze: BronzeCard,
+    Color.Brass: BrassCard,
+    Color.Red: RedCard,
+    Color.Black: BlackCard,
+    Color.Green: GreenCard,
+    Color.White: WhiteCard,
+    Color.Blue: BlueCard,
+}
+
 class Player:
     def __init__(self, gold: int, cardCount: int=6):
         self.gold = gold
         self.cardCount = cardCount
         self.flight = Flight()
     
-    def playTurn(self, prev: Value) -> Card:
+    def playTurn(self, prev: Value, game: "TDA") -> Card:
         while True:
             cardInput = input("please enter the card they played\n")
             try:
@@ -57,7 +209,7 @@ class Player:
                 self.cardCount -= 1
                 self.flight.addCard(thisCard)
                 if thisCard.value.value <= prev.value:
-                    thisCard.power(self)
+                    thisCard.power(self, game.players)
                 return thisCard
             except:
                 print("Invalid input, try again\n")
@@ -158,7 +310,7 @@ class TDA:
     def playTurn(self, prev: Value) -> Card:
         if self.turn != self.numPlayers-1:
             print(f"Player {self.turn} turn...")
-            newPrev = self.players[self.turn].playTurn(prev)
+            newPrev = self.players[self.turn].playTurn(prev, self)
         else:
             newPrev = self.AIPlayer.playTurn(self, prev)
         return newPrev
@@ -269,103 +421,9 @@ class AIPlayer:
         self.cards.pop(0)
         self.flight.addCard(playCard)
         if playCard.value.value <= prev.value:
-            playCard.power(self)
+            playCard.power(self, game.players)
         print(f"\n\n AI player's turn...\n***** AI ADVICE: play {playCard.color.value} {playCard.value.value}\n")
-        return playCard
-    
-# Subclasses for each color
-class GoldCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Gold, value)
-        self.good = True
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class SilverCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Silver, value)
-        self.good = True
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class CopperCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Copper, value)
-        self.good = True
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class BronzeCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Bronze, value)
-        self.good = True
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class BrassCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Brass, value)
-        self.good = True
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class RedCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Red, value)
-        self.good = False
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class BlackCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Black, value)
-        self.good = False
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class GreenCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Green, value)
-        self.good = False
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class WhiteCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.White, value)
-        self.good = False
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-class BlueCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Blue, value)
-        self.good = False
-    
-    def power(self, player: Union[Player, AIPlayer]):
-        pass
-
-COLOR_TO_CLASS: Card = {
-    Color.Gold: GoldCard,
-    Color.Silver: SilverCard,
-    Color.Copper: CopperCard,
-    Color.Bronze: BronzeCard,
-    Color.Brass: BrassCard,
-    Color.Red: RedCard,
-    Color.Black: BlackCard,
-    Color.Green: GreenCard,
-    Color.White: WhiteCard,
-    Color.Blue: BlueCard,
-}       
+        return playCard       
 
 def play_game():
     print("*** WELCOME to 3DA AI ***\n\n")
