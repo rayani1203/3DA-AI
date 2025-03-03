@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -34,104 +34,33 @@ class Card(ABC):
     def __init__(self, color: Color, value: Value):
         self.color = color
         self.value = value
+        self.good = None
     
     @abstractmethod
-    def power(self):
+    def power(self, player):
         pass
 
-# Subclasses for each color
-class GoldCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Gold, value)
-        self.good = True
+class Player:
+    def __init__(self, gold: int, cardCount: int=6):
+        self.gold = gold
+        self.cardCount = cardCount
+        self.flight = Flight()
     
-    def power(self):
-        pass
-
-class SilverCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Silver, value)
-        self.good = True
-    
-    def power(self):
-        pass
-
-class CopperCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Copper, value)
-        self.good = True
-    
-    def power(self):
-        pass
-
-class BronzeCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Bronze, value)
-        self.good = True
-    
-    def power(self):
-        pass
-
-class BrassCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Brass, value)
-        self.good = True
-    
-    def power(self):
-        pass
-
-class RedCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Red, value)
-        self.good = False
-    
-    def power(self):
-        pass
-
-class BlackCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Black, value)
-        self.good = False
-    
-    def power(self):
-        pass
-
-class GreenCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Green, value)
-        self.good = False
-    
-    def power(self):
-        pass
-
-class WhiteCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.White, value)
-        self.good = False
-    
-    def power(self):
-        pass
-
-class BlueCard(Card):
-    def __init__(self, value: Value):
-        super().__init__(Color.Blue, value)
-        self.good = False
-    
-    def power(self):
-        pass
-
-COLOR_TO_CLASS = {
-    Color.Gold: GoldCard,
-    Color.Silver: SilverCard,
-    Color.Copper: CopperCard,
-    Color.Bronze: BronzeCard,
-    Color.Brass: BrassCard,
-    Color.Red: RedCard,
-    Color.Black: BlackCard,
-    Color.Green: GreenCard,
-    Color.White: WhiteCard,
-    Color.Blue: BlueCard,
-}
+    def playTurn(self, prev: Value) -> Card:
+        while True:
+            cardInput = input("please enter the card they played\n")
+            try:
+                [colorInput, valueInput] = cardInput.split(" ")
+                color = Color(colorInput.capitalize())
+                value = Value(int(valueInput))
+                thisCard: Card = COLOR_TO_CLASS[color](value)
+                self.cardCount -= 1
+                self.flight.addCard(thisCard)
+                if thisCard.value.value <= prev.value:
+                    thisCard.power(self)
+                return thisCard
+            except:
+                print("Invalid input, try again\n")
 
 class TDA:
     def __init__(self, numPlayers: int, playerGold: int, AICards: List[Card]):
@@ -151,14 +80,13 @@ class TDA:
             return False
         sums = [self.AIPlayer.flight.total]
         for player in self.players:
-            if player.cardCount < 3:
-                return False
             sums.append(player.flight.total)
         sums.sort()
         return sums[-1] > sums[-2]
 
     def playAnte(self):
         thisAnteCards: List[Card] = []
+        AIAnte = self.AIPlayer.ante(self)
         while len(thisAnteCards) < self.numPlayers - 1:
             cardInput = input(f"Please enter player {len(thisAnteCards)} ante card in standard format (\"Color Value\")\n")
             try:
@@ -170,7 +98,7 @@ class TDA:
             except:
                 print("Invalid input, try again\n")
         
-        thisAnteCards.append(self.AIPlayer.ante(self))
+        thisAnteCards.append(AIAnte)
         startIdx = self.findStart(thisAnteCards)
         if startIdx == -1:
             for player in self.players:
@@ -209,23 +137,96 @@ class TDA:
         for i, card in enumerate(cards):
             if card.value.value > highest and counts[card.value.value] == 1:
                 idx = i
+                highest = card.value.value
         return idx
 
-    def playTurn(self):
+    def playRound(self, roundNum: int):
+        print(f"Beginning round {roundNum}, starting with player {self.turn}")
+        turns = 0
+        prevVal = Value.Thirteen
+        thisRound : List[Card] = [None] * self.numPlayers
+        while turns < self.numPlayers:
+            playedCard = self.playTurn(prevVal)
+            prevVal = playedCard.value
+            turns += 1
+            thisRound[self.turn] = playedCard
+            self.turn = (self.turn + 1)%self.numPlayers
+        newStart = self.findStart(thisRound)
+        if newStart != -1:
+            self.turn = newStart
+    
+    def playTurn(self, prev: Value) -> Card:
+        if self.turn != self.numPlayers-1:
+            print(f"Player {self.turn} turn...")
+            newPrev = self.players[self.turn].playTurn(prev)
+        else:
+            newPrev = self.AIPlayer.playTurn(self, prev)
+        return newPrev
+
+    def endGambit(self):
+        print()
+
+        winner = None
+        highest = 0
+        for player in self.players:
+            if player.flight.total > highest:
+                winner = player
+                highest = player.flight.total
+            player.flight = Flight()
+        if self.AIPlayer.flight.total > highest:
+            winner = self.AIPlayer
+            print("AI won!!!")
+        else:
+            print("AI did not win...")
+        self.AIPlayer.flight = Flight()
+        winner.gold += self.ante.value
+
+        self.ante = None
+
         self.printStatus()
-        """*******TODO********"""
-        input()
+    
+    def dealCards(self):
+        for player in self.players:
+            player.cardCount = min(10, player.cardCount + 2)
+        AICards = min(2, 10-len(self.AIPlayer.cards))
+        for _ in range(AICards):
+            while True:
+                cardInput = input("Enter card dealt for new gambit to AI...\n")
+                try:
+                    [colorInput, valueInput] = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    thisCard: Card = COLOR_TO_CLASS[color](value)
+                    self.AIPlayer.cards.append(thisCard)
+                    break
+                except Exception as e:
+                    print(e)
+                    print("Invalid input, try again\n")
+    
+    def checkWinner(self):
+        highest = 0
+        winner = -1
+        for i, player in enumerate(self.players):
+            if player.gold > highest:
+                winner = i
+                highest = player.gold
+        
+        if self.AIPlayer.gold >= highest:
+            print(f"AI won with {self.AIPlayer.gold} gold!!!")
+        else:
+            print(f"Player {winner} won with {highest} gold")
     
     def printStatus(self):
-        print('this is where we play a turn')
-        print('state:')
+        print('\nPRINTING current game status...\n')
         print('ante:')
-        print(self.ante.cards)
-        print(self.ante.value)
-        print(f"turn: {self.turn}")
+        if self.ante:
+            print(self.ante.cards)
+            print(self.ante.value)
+            print(f"turn: {self.turn}")
         print(f"cards: {self.AIPlayer.cards}, gold: {self.AIPlayer.gold}")
         for i, player in enumerate(self.players):
             print(f"{i}: {player.cardCount}, {player.gold}")
+        print()
 
 class Ante:
     def __init__(self, cards: List[Card]):
@@ -239,12 +240,15 @@ class Flight:
         self.total = 0
         self.goods = 0
         self.evils = 0
-
-class Player:
-    def __init__(self, gold: int, cardCount: int=6):
-        self.gold = gold
-        self.cardCount = cardCount
-        self.flight = Flight()
+    
+    def addCard(self, card: Card):
+        self.cards.append(card)
+        self.total += card.value.value
+        if card.good:
+            self.goods += 1
+        else:
+            self.evils += 1        
+        
 
 class AIPlayer:
     def __init__(self, gold: int, cards: List[Card]):
@@ -253,10 +257,115 @@ class AIPlayer:
         self.flight = Flight()
     
     def ante(self, game: TDA):
+        """***TODO***"""
         anteCard = min(self.cards, key=lambda card:card.value.value)
         self.cards.remove(anteCard)
+        print(f"\n\n **** AI ADVICE: ante {anteCard.color.value} {anteCard.value.value}\n")
         return anteCard
-        
+    
+    def playTurn(self, game: TDA, prev: Value) -> Card:
+        "***TODO***"
+        playCard = self.cards[0]
+        self.cards.pop(0)
+        self.flight.addCard(playCard)
+        if playCard.value.value <= prev.value:
+            playCard.power(self)
+        print(f"\n\n AI player's turn...\n***** AI ADVICE: play {playCard.color.value} {playCard.value.value}\n")
+        return playCard
+    
+# Subclasses for each color
+class GoldCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Gold, value)
+        self.good = True
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class SilverCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Silver, value)
+        self.good = True
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class CopperCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Copper, value)
+        self.good = True
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class BronzeCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Bronze, value)
+        self.good = True
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class BrassCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Brass, value)
+        self.good = True
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class RedCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Red, value)
+        self.good = False
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class BlackCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Black, value)
+        self.good = False
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class GreenCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Green, value)
+        self.good = False
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class WhiteCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.White, value)
+        self.good = False
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+class BlueCard(Card):
+    def __init__(self, value: Value):
+        super().__init__(Color.Blue, value)
+        self.good = False
+    
+    def power(self, player: Union[Player, AIPlayer]):
+        pass
+
+COLOR_TO_CLASS: Card = {
+    Color.Gold: GoldCard,
+    Color.Silver: SilverCard,
+    Color.Copper: CopperCard,
+    Color.Bronze: BronzeCard,
+    Color.Brass: BrassCard,
+    Color.Red: RedCard,
+    Color.Black: BlackCard,
+    Color.Green: GreenCard,
+    Color.White: WhiteCard,
+    Color.Blue: BlueCard,
+}       
 
 def play_game():
     print("*** WELCOME to 3DA AI ***\n\n")
@@ -284,10 +393,14 @@ def play_game():
 
     while not game.isGameOver():
         game.playAnte()
+        round = 1
         while not game.isGambitOver():
-            game.playTurn()
+            game.playRound(round)
+            round += 1
+        game.endGambit()
+        game.dealCards()
     
-    """***TODO****"""
-
+    print("Game over...")
+    print(game.checkWinner())
 
 play_game()
