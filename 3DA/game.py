@@ -141,7 +141,56 @@ class RedCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
         print(f"{self.color} dragon triggers...")
-        pass
+        highest = -1
+        biggest = []
+        for i, opp in enumerate(game.players):
+            if opp == player:
+                continue
+            if opp.flight.total > highest:
+                highest = opp.flight.total
+                biggest = [i]
+            elif opp.flight.total == highest:
+                biggest.append(i)
+        while True and len(biggest) > 1:
+            try:
+                selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {biggest}"))
+                break
+            except:
+                print("Invalid input, enter an integer")
+        if selectedOpp < game.numPlayers - 1:
+            game.players[selectedOpp].gold -= 1
+            game.players[selectedOpp].cardCount -= 1
+        else:
+            game.AIPlayer.gold -= 1
+            print("Drawing from AI...")
+            while True:
+                cardInput = input("Enter the card drawn from AI player's hand:\n")
+                try:
+                    colorInput, valueInput = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    cardToRemove = next(card for card in game.AIPlayer.cards if card.color == color and card.value == value)
+                    game.AIPlayer.cards.remove(cardToRemove)
+                    break
+                except StopIteration:
+                    print("Card not found in AI player's hand, try again\n")
+                except Exception:
+                    print("Invalid input, try again\n")
+
+        player.gold += 1
+        if isinstance(player, Player):
+            player.cardCount += 1
+        else:
+            while True:
+                cardInput = input("Enter the card added to the AI player's hand:\n")
+                try:
+                    colorInput, valueInput = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    player.cards.append(COLOR_TO_CLASS[color](value))
+                    break
+                except:
+                    print("Invalid input, try again\n")
 
 class BlackCard(Card):
     def __init__(self, value: Value):
@@ -150,7 +199,9 @@ class BlackCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
         print(f"{self.color} dragon triggers...")
-        pass
+        amount = min(3, game.ante.value)
+        game.ante.value -= amount
+        player.gold += amount
 
 class GreenCard(Card):
     def __init__(self, value: Value):
@@ -168,7 +219,28 @@ class WhiteCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
         print(f"{self.color} dragon triggers...")
-        pass
+        weakest = float('inf')
+        weakest_opponents = []
+        for i, opp in enumerate(game.players):
+            if opp == player:
+                continue
+            if opp.flight.total < weakest:
+                weakest = opp.flight.total
+                weakest_opponents = [i]
+            elif opp.flight.total == weakest:
+                weakest_opponents.append(i)
+        while True and len(weakest_opponents) > 1:
+            try:
+                selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {weakest_opponents}"))
+                break
+            except:
+                print("Invalid input, enter an integer")
+        if selectedOpp < game.numPlayers - 1:
+            game.players[selectedOpp].gold -= 2
+        else:
+            game.AIPlayer.gold -= 2
+
+        player.gold += 2
 
 class BlueCard(Card):
     def __init__(self, value: Value):
@@ -177,7 +249,31 @@ class BlueCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
         print(f"{self.color} dragon triggers...")
-        pass
+        while True:
+            addAnteInput = input("Option: Enter 'Y' if you would like to add money to the stakes, and 'N' if you'd like 1 from each opponent")
+            if addAnteInput.capitalize() == 'Y':
+                addAnte = True
+            elif addAnteInput.capitalize() == 'N':
+                addAnte = False
+            else:
+                continue
+            break
+        if addAnte:
+            amount = len(player.flight.cards)
+            for opp in game.players:
+                if opp == player:
+                    continue
+                opp.gold -= amount
+                game.ante.value += amount
+            if isinstance(player, Player):
+                game.AIPlayer.gold -= amount
+                game.ante.value += amount
+        else:
+            for opp in game.players:
+                opp.gold -= 1
+                player.gold += 1
+            game.AIPlayer.gold -= 1
+            player.gold += 1
 
 COLOR_TO_CLASS: Card = {
     Color.Gold: GoldCard,
@@ -191,28 +287,6 @@ COLOR_TO_CLASS: Card = {
     Color.White: WhiteCard,
     Color.Blue: BlueCard,
 }
-
-class Player:
-    def __init__(self, gold: int, cardCount: int=6):
-        self.gold = gold
-        self.cardCount = cardCount
-        self.flight = Flight()
-    
-    def playTurn(self, prev: Value, game: "TDA") -> Card:
-        while True:
-            cardInput = input("please enter the card they played\n")
-            try:
-                [colorInput, valueInput] = cardInput.split(" ")
-                color = Color(colorInput.capitalize())
-                value = Value(int(valueInput))
-                thisCard: Card = COLOR_TO_CLASS[color](value)
-                self.cardCount -= 1
-                self.flight.addCard(thisCard)
-                if thisCard.value.value <= prev.value:
-                    thisCard.power(self, game.players)
-                return thisCard
-            except:
-                print("Invalid input, try again\n")
 
 class TDA:
     def __init__(self, numPlayers: int, playerGold: int, AICards: List[Card]):
@@ -401,6 +475,29 @@ class Flight:
         else:
             self.evils += 1        
         
+class Player:
+    def __init__(self, gold: int, cardCount: int=6):
+        self.gold = gold
+        self.cardCount = cardCount
+        self.flight = Flight()
+    
+    def playTurn(self, prev: Value, game: "TDA") -> Card:
+        while True:
+            cardInput = input("please enter the card they played\n")
+            try:
+                [colorInput, valueInput] = cardInput.split(" ")
+                color = Color(colorInput.capitalize())
+                value = Value(int(valueInput))
+                thisCard: Card = COLOR_TO_CLASS[color](value)
+                self.cardCount -= 1
+                self.flight.addCard(thisCard)
+                if thisCard.value.value <= prev.value:
+                    thisCard.power(self, game.players)
+                return thisCard
+            except:
+                print("Invalid input, try again\n")
+    
+    """TODO: remove gold / hole"""
 
 class AIPlayer:
     def __init__(self, gold: int, cards: List[Card]):
@@ -423,7 +520,9 @@ class AIPlayer:
         if playCard.value.value <= prev.value:
             playCard.power(self, game.players)
         print(f"\n\n AI player's turn...\n***** AI ADVICE: play {playCard.color.value} {playCard.value.value}\n")
-        return playCard       
+        return playCard  
+
+    """TODO: remove gold / hole"""     
 
 def play_game():
     print("*** WELCOME to 3DA AI ***\n\n")
