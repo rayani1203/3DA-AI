@@ -132,7 +132,27 @@ class BrassCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
         print(f"{self.color} dragon triggers...")
-        pass
+        if isinstance(player, AIPlayer):
+            idx = -1
+        else:
+            idx = 0
+            for i, p in enumerate(game.players):
+                if player == p:
+                    idx = i
+                    break
+            if idx == 0:
+                card = game.AIPlayer.decideCard(game, self.value, True)
+                if card:
+                    player.cardCount += 1
+                else:
+                    player.gold += 5
+            else:
+                idx -= 1
+        card = card_coin_choice(game.players[idx], game, self.value, True)
+        if card:
+            player.cards.append(card)
+        else:
+            player.gold += 5
 
 class RedCard(Card):
     def __init__(self, value: Value):
@@ -210,7 +230,27 @@ class GreenCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: "TDA"):
         print(f"{self.color} dragon triggers...")
-        pass
+        if isinstance(player, AIPlayer):
+            idx = 0
+        else:
+            idx = 0
+            for i, p in enumerate(game.players):
+                if player == p:
+                    idx = i
+                    break
+            if idx == len(game.players)-1:
+                card = game.AIPlayer.decideCard(game, self.value, False)
+                if card:
+                    player.cardCount += 1
+                else:
+                    player.gold += 5
+            else:
+                idx += 1
+        card = card_coin_choice(game.players[idx], game, self.value, False)
+        if card:
+            player.cards.append(card)
+        else:
+            player.gold += 5
 
 class WhiteCard(Card):
     def __init__(self, value: Value):
@@ -520,9 +560,47 @@ class AIPlayer:
         if playCard.value.value <= prev.value:
             playCard.power(self, game.players)
         print(f"\n\n AI player's turn...\n***** AI ADVICE: play {playCard.color.value} {playCard.value.value}\n")
-        return playCard  
+        return playCard
+    
+    def decideCard(self, game: TDA, value: Value, above: bool):
+        for card in self.cards:
+            if card.value.value > value.value and above:
+                print(f"**** AI ADVICE: give card {card.color.value} {card.value.value}")
+                self.cards.remove(card)
+                return card
+            elif card.value.value < value.value and not above:
+                print(f"**** AI ADVICE: give card {card.color.value} {card.value.value}")
+                self.cards.remove(card)
+                return card
+        
+        print("**** AI ADVICE: give coins, not card")
+        self.gold -= 5
+        return None
 
-    """TODO: remove gold / hole"""     
+    """TODO: remove gold / hole"""    
+
+def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, above: bool):
+    if isinstance(receiver, AIPlayer):
+        return receiver.decideCard(game, value, above)
+    else:
+        choice = input("Would you like to give a card? (Y/N)\n").strip().upper()
+        if choice == 'Y':
+            while True:
+                cardInput = input("Enter the card to give:\n")
+                try:
+                    colorInput, valueInput = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    cardToGive = next(card for card in receiver.cards if card.color == color and card.value == value)
+                    receiver.cards.remove(cardToGive)
+                    return cardToGive
+                except StopIteration:
+                    print("Card not found in player's hand, try again\n")
+                except Exception:
+                    print("Invalid input, try again\n")
+        else:
+            receiver.gold -= 5
+            return None
 
 def play_game():
     print("*** WELCOME to 3DA AI ***\n\n")
