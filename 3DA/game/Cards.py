@@ -68,6 +68,8 @@ class CopperCard(Card):
                 break
             except Exception:
                 print("Invalid input, try again\n")
+        player.flight.cards.pop(-1)
+        player.flight.addCard(newCard)
         newCard.power(player, game)
 
 class BronzeCard(Card):
@@ -78,7 +80,7 @@ class BronzeCard(Card):
     def power(self, player: Union["Player", "AIPlayer"], game: TDA):
         print(f"{self.color} dragon triggers...")
         anteCards = game.ante.cards
-        anteCards.sort(key=lambda card: card.value)
+        anteCards.sort(key=lambda card: card.value.value)
         cards = 0
         drawnCards = []
         while cards < 2 and anteCards:
@@ -96,8 +98,10 @@ class BrassCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA):
         print(f"{self.color} dragon triggers...")
+        toAI = False
         if isinstance(player, AIPlayer):
             idx = -1
+            toAI = True
         else:
             idx = 0
             for i, p in enumerate(game.players):
@@ -110,11 +114,15 @@ class BrassCard(Card):
                     player.cardCount += 1
                 else:
                     player.gold += 5
+                return
             else:
                 idx -= 1
-        card = card_coin_choice(game.players[idx], game, self.value, True)
-        if card:
-            player.cards.append(card)
+        (gives, card) = card_coin_choice(game.players[idx], game, self.value, True, toAI)
+        if gives:
+            if isinstance(player, Player):
+                player.cardCount += 1
+            else:
+                player.cards.append(card)
         else:
             player.gold += 5
 
@@ -194,8 +202,10 @@ class GreenCard(Card):
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA):
         print(f"{self.color} dragon triggers...")
+        toAI = False
         if isinstance(player, AIPlayer):
             idx = 0
+            toAI = True
         else:
             idx = 0
             for i, p in enumerate(game.players):
@@ -208,11 +218,15 @@ class GreenCard(Card):
                     player.cardCount += 1
                 else:
                     player.gold += 5
+                return
             else:
                 idx += 1
-        card = card_coin_choice(game.players[idx], game, self.value, False)
-        if card:
-            player.cards.append(card)
+        (gives, card) = card_coin_choice(game.players[idx], game, self.value, False, toAI)
+        if gives:
+            if isinstance(player, Player):
+                player.cardCount += 1
+            else:
+                player.cards.append(card)
         else:
             player.gold += 5
 
@@ -292,25 +306,29 @@ COLOR_TO_CLASS: Card = {
     Color.Blue: BlueCard,
 }
 
-def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, above: bool):
+def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, above: bool, toAI: bool):
     if isinstance(receiver, AIPlayer):
         return receiver.decideCard(game, value, above)
     else:
         choice = input("Would you like to give a card? (Y/N)\n").strip().upper()
         if choice == 'Y':
-            while True:
-                cardInput = input("Enter the card to give:\n")
-                try:
-                    colorInput, valueInput = cardInput.split(" ")
-                    color = Color(colorInput.capitalize())
-                    value = Value(int(valueInput))
-                    cardToGive = next(card for card in receiver.cards if card.color == color and card.value == value)
-                    receiver.cards.remove(cardToGive)
-                    return cardToGive
-                except StopIteration:
-                    print("Card not found in player's hand, try again\n")
-                except Exception:
-                    print("Invalid input, try again\n")
+            if toAI:
+                while True:
+                    cardInput = input("Enter the card to give:\n")
+                    try:
+                        colorInput, valueInput = cardInput.split(" ")
+                        color = Color(colorInput.capitalize())
+                        value = Value(int(valueInput))
+                        cardToGive = COLOR_TO_CLASS[color](value)
+                        receiver.cardCount -= 1
+                        return (True, cardToGive)
+                    except StopIteration:
+                        print("Card not found in player's hand, try again\n")
+                    except Exception:
+                        print("Invalid input, try again\n")
+            else:
+                receiver.cardCount -= 1
+                return (True, None)
         else:
             receiver.gold -= 5
-            return None
+            return (False, None)

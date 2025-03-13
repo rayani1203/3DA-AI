@@ -163,8 +163,8 @@ class TDA:
     
     def printStatus(self):
         print('\nPRINTING current game status...\n')
-        print('ante:')
         if self.ante:
+            print('ante:')
             print(self.ante.cards)
             print(self.ante.value)
             print(f"turn: {self.turn}")

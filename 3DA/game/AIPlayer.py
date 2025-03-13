@@ -29,12 +29,13 @@ class AIPlayer:
         return playCard
     
     def decideCard(self, game: "TDA", value: Value, above: bool):
+        """***TODO*** decide card / coin"""
         for card in self.cards:
-            if card.value.value > value.value and above:
+            if card.value.value > value.value and above and card.good:
                 print(f"**** AI ADVICE: give card {card.color.value} {card.value.value}")
                 self.cards.remove(card)
                 return card
-            elif card.value.value < value.value and not above:
+            elif card.value.value < value.value and not above and not card.good:
                 print(f"**** AI ADVICE: give card {card.color.value} {card.value.value}")
                 self.cards.remove(card)
                 return card
