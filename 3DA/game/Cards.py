@@ -143,12 +143,20 @@ class RedCard(Card):
                 biggest = [i]
             elif opp.flight.total == highest:
                 biggest.append(i)
-        while True and len(biggest) > 1:
-            try:
-                selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {biggest}"))
-                break
-            except:
-                print("Invalid input, enter an integer")
+        if isinstance(player, Player):
+            if game.AIPlayer.flight.total > highest:
+                biggest = [game.numPlayers - 1]
+            elif game.AIPlayer.flight.total == highest:
+                biggest.append(game.numPlayers - 1)
+        if len(biggest) > 1:
+            while True:
+                try:
+                    selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {biggest}"))
+                    break
+                except:
+                    print("Invalid input, enter an integer")
+        else:
+            selectedOpp = biggest[0]
         if selectedOpp < game.numPlayers - 1:
             game.players[selectedOpp].gold -= 1
             game.players[selectedOpp].cardCount -= 1

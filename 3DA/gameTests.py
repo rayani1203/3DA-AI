@@ -128,23 +128,52 @@ class TestBrassCard(unittest.TestCase):
         self.assertEqual(len(self.game.AIPlayer.cards), 4)
         self.assertTrue(any(isinstance(card, RedCard) and card.value == Value(7) for card in self.game.AIPlayer.cards))
 
-# class TestRedCard(unittest.TestCase):
-#     def setUp(self):
-#         self.game = MagicMock()
-#         self.player = Player(10)
-#         self.game.players = [MagicMock(), MagicMock()]
-#         self.game.players[0].flight.total = 5
-#         self.game.players[1].flight.total = 3
-#         self.game.AIPlayer = MagicMock()
-#         self.game.AIPlayer.flight.total = 4
+class TestRedCard(unittest.TestCase):
+    def setUp(self):
+        self.game = MagicMock()
+        self.game.numPlayers = 3
+        self.player = Player(10)
+        self.game.players = [self.player, MagicMock()]
+        self.player.flight.total = 5
+        self.player.cardCount = 2
+        self.game.AIPlayer = AIPlayer(10, [GreenCard(Value(7)), BronzeCard(Value(5)), RedCard(Value(1))])
+        self.game.AIPlayer.flight.total = 4
 
-#     @patch("builtins.input", side_effect=["0", "Gold 5"])
-#     def test_red_card_power(self, mock_input):
-#         card = RedCard(Value(3))
-#         card.power(self.player, self.game)
+    @patch("builtins.input", side_effect=["Green 7"])
+    def test_red_card_power_on_AI(self, mock_input):
+        self.game.players[1].flight.total = 3
+        card = RedCard(Value(3))
+        card.power(self.player, self.game)
 
-#         # Check if the player received the correct number of cards
-#         self.assertTrue(mock_input.called)
+        # Check if the player received the correct number of cards
+        self.assertTrue(mock_input.called)
+        self.assertFalse(any(isinstance(card, GreenCard) and card.value == Value(7) for card in self.game.AIPlayer.cards))
+        self.assertTrue(self.player.cardCount == 3)
+    
+    @patch("builtins.input", side_effect=["2", "Green 7"])
+    def test_red_card_power_on_AI_with_choice(self, mock_input):
+        self.game.players[1].flight.total = 4
+        card = RedCard(Value(3))
+        card.power(self.player, self.game)
+
+        # Check if the player received the correct number of cards
+        self.assertTrue(mock_input.called)
+        self.assertFalse(any(isinstance(card, GreenCard) and card.value == Value(7) for card in self.game.AIPlayer.cards))
+        self.assertTrue(self.player.cardCount == 3)
+        self.assertTrue(self.player.gold == self.game.AIPlayer.gold+2)
+    
+    @patch("builtins.input", side_effect=["Red 2"])
+    def test_red_card_power_from_AI(self, mock_input):
+        self.game.players[1].flight.total = 4
+        card = RedCard(Value(3))
+        card.power(self.game.AIPlayer, self.game)
+
+        # Check if the player received the correct number of cards
+        self.assertTrue(mock_input.called)
+        self.assertTrue(self.player.cardCount == 1)
+        self.assertTrue(any(isinstance(card, RedCard) and card.value == Value(2) for card in self.game.AIPlayer.cards)) 
+        self.assertTrue(len(self.game.AIPlayer.cards) == 4)
+        self.assertTrue(self.player.gold == self.game.AIPlayer.gold-2)
 
 # class TestBlackCard(unittest.TestCase):
 #     def setUp(self):
