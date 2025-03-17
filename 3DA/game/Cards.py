@@ -255,12 +255,21 @@ class WhiteCard(Card):
                 weakest_opponents = [i]
             elif opp.flight.total == weakest:
                 weakest_opponents.append(i)
-        while True and len(weakest_opponents) > 1:
-            try:
-                selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {weakest_opponents}"))
-                break
-            except:
-                print("Invalid input, enter an integer")
+        if isinstance(player, Player):
+            if game.AIPlayer.flight.total < weakest:
+                weakest_opponents = [game.numPlayers - 1]
+            elif game.AIPlayer.flight.total == weakest:
+                weakest_opponents.append(game.numPlayers - 1)
+        if len(weakest_opponents) > 1:
+            while True:
+                try:
+                    selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {weakest_opponents}"))
+                    break
+                except:
+                    print("Invalid input, enter an integer")
+        else:
+            selectedOpp = weakest_opponents[0]
+        print(selectedOpp)
         if selectedOpp < game.numPlayers - 1:
             game.players[selectedOpp].gold -= 2
         else:

@@ -4,6 +4,7 @@ from game.Cards import *
 from game.Card import *
 from game.Player import Player
 from game.Ante import Ante
+from game.Flight import Flight
 
 class TestGoldCard(unittest.TestCase):
     def setUp(self):
@@ -175,72 +176,150 @@ class TestRedCard(unittest.TestCase):
         self.assertTrue(len(self.game.AIPlayer.cards) == 4)
         self.assertTrue(self.player.gold == self.game.AIPlayer.gold-2)
 
-# class TestBlackCard(unittest.TestCase):
-#     def setUp(self):
-#         self.game = MagicMock()
-#         self.player = Player(10)
-#         self.game.ante.value = 5
+class TestBlackCard(unittest.TestCase):
+    def setUp(self):
+        self.game = MagicMock()
+        self.player = Player(10)
+        self.game.ante = Ante([GoldCard(Value(4)), RedCard(Value(3)), BlueCard(Value(2))])
+        self.assertTrue(self.game.ante.value == 12)
 
-#     def test_black_card_power(self):
-#         card = BlackCard(Value(3))
-#         card.power(self.player, self.game)
+    def test_black_card_power(self):
+        card = BlackCard(Value(3))
+        card.power(self.player, self.game)
 
-#         # Check if the player received the correct amount of gold
-#         self.assertEqual(self.player.gold, 13)
+        # Check if the player received the correct amount of gold
+        self.assertEqual(self.player.gold, 13)
+        self.assertEqual(self.game.ante.value, 9)
 
-# class TestGreenCard(unittest.TestCase):
-#     def setUp(self):
-#         self.game = MagicMock()
-#         self.player = Player(10)
-#         self.game.players = [MagicMock(), MagicMock()]
-#         self.game.players[0].flight.total = 5
-#         self.game.players[1].flight.total = 3
-#         self.game.AIPlayer = MagicMock()
-#         self.game.AIPlayer.flight.total = 4
+class TestGreenCard(unittest.TestCase):
+    def setUp(self):
+        self.game = MagicMock()
+        self.player = Player(10)
+        self.player.cardCount = 2
+        self.game.AIPlayer = AIPlayer(10, [GreenCard(Value(7)), BronzeCard(Value(5)), RedCard(Value(1))])
 
-#     @patch("builtins.input", return_value="Gold 5")
-#     def test_green_card_power(self, mock_input):
-#         card = GreenCard(Value(3))
-#         card.power(self.player, self.game)
+    def test_green_card_power_to_AI(self):
+        self.game.players = [MagicMock(), self.player]
+        card = GreenCard(Value(3))
+        card.power(self.player, self.game)
 
-#         # Check if the player received the correct number of cards
-#         self.assertTrue(mock_input.called)
+        # Check if the player received the correct number of cards
+        self.assertEqual(self.player.cardCount, 3)
+        self.assertEqual(len(self.game.AIPlayer.cards), 2)
+        self.assertFalse(any(isinstance(card, RedCard) and card.value == Value(1) for card in self.game.AIPlayer.cards))
+    
+    @patch("builtins.input", return_value="Y")
+    def test_green_card_power_to_player(self, mock_input):
+        self.game.players = [self.player, MagicMock()]
+        self.game.players[1].cardCount = 4
+        card = GreenCard(Value(3))
+        card.power(self.player, self.game)
 
-# class TestWhiteCard(unittest.TestCase):
-#     def setUp(self):
-#         self.game = MagicMock()
-#         self.player = Player(10)
-#         self.game.players = [MagicMock(), MagicMock()]
-#         self.game.players[0].flight.total = 2
-#         self.game.players[1].flight.total = 3
-#         self.game.AIPlayer = MagicMock()
-#         self.game.AIPlayer.flight.total = 1
+        # Check if the player received the correct number of cards
+        self.assertTrue(mock_input.called)
+        self.assertEqual(self.player.cardCount, 3)
+        self.assertEqual(self.game.players[1].cardCount, 3)
+    
+    @patch("builtins.input", side_effect=["Y", "Red 2"])
+    def test_green_card_power_from_AI(self, mock_input):
+        self.game.players = [self.player, MagicMock()]
+        card = GreenCard(Value(3))
+        card.power(self.game.AIPlayer, self.game)
 
-#     @patch("builtins.input", return_value="0")
-#     def test_white_card_power(self, mock_input):
-#         card = WhiteCard(Value(3))
-#         card.power(self.player, self.game)
+        # Check if the player received the correct number of cards
+        self.assertTrue(mock_input.called)
+        self.assertEqual(self.player.cardCount, 1)
+        self.assertEqual(len(self.game.AIPlayer.cards), 4)
+        self.assertTrue(any(isinstance(card, RedCard) and card.value == Value(2) for card in self.game.AIPlayer.cards))
 
-#         # Check if the player received the correct amount of gold
-#         self.assertEqual(self.player.gold, 12)
+class TestWhiteCard(unittest.TestCase):
+    def setUp(self):
+        self.game = MagicMock()
+        self.player = Player(10)
+        self.game.players = [self.player, MagicMock()]
+        self.game.players[0].flight.total = 4
+        self.game.players[1].flight.total = 3
+        self.game.players[1].gold = 10
+        self.game.AIPlayer = MagicMock()
+        self.game.AIPlayer.gold = 10
+        self.game.numPlayers = 3
 
-# class TestBlueCard(unittest.TestCase):
-#     def setUp(self):
-#         self.game = MagicMock()
-#         self.player = Player(10)
-#         self.game.players = [MagicMock(), MagicMock()]
-#         self.game.players[0].gold = 10
-#         self.game.players[1].gold = 10
-#         self.game.AIPlayer = MagicMock()
-#         self.game.AIPlayer.gold = 10
+    def test_white_card_power(self):
+        self.game.AIPlayer.flight.total = 1
+        card = WhiteCard(Value(3))
+        card.power(self.player, self.game)
 
-#     @patch("builtins.input", return_value="Y")
-#     def test_blue_card_power(self, mock_input):
-#         card = BlueCard(Value(3))
-#         card.power(self.player, self.game)
+        # Check if the player received the correct amount of gold
+        self.assertEqual(self.player.gold, 12)
+        self.assertEqual(self.game.players[1].gold, 10)
+        self.assertEqual(self.game.AIPlayer.gold, 8)
+    
+    @patch("builtins.input", return_value="2")
+    def test_white_card_power_with_tie(self, mock_input):
+        self.game.AIPlayer.flight.total = 3
+        card = WhiteCard(Value(3))
+        card.power(self.player, self.game)
 
-#         # Check if the player received the correct amount of gold
-#         self.assertTrue(mock_input.called)
+        # Check if the player received the correct amount of gold
+        self.assertEqual(self.player.gold, 12)
+        self.assertEqual(self.game.players[1].gold, 10)
+        self.assertEqual(self.game.AIPlayer.gold, 8)
+
+class TestBlueCard(unittest.TestCase):
+    def setUp(self):
+        self.game = MagicMock()
+        self.player = Player(10)
+        self.game.players = [self.player, MagicMock()]
+        self.game.players[0].gold = 10
+        self.game.players[1].gold = 10
+        self.game.AIPlayer = MagicMock()
+        self.game.AIPlayer.gold = 10
+        self.game.ante = Ante([GoldCard(Value(4)), RedCard(Value(3)), BlueCard(Value(2))])
+
+    @patch("builtins.input", return_value="Y")
+    def test_blue_card_power_to_ante(self, mock_input):
+        self.player.flight = Flight()
+        self.player.flight.addCard(SilverCard(Value(9)))
+        self.player.flight.addCard(BlueCard(Value(3)))
+        card = BlueCard(Value(3))
+        card.power(self.player, self.game)
+
+        # Check if the player received the correct amount of gold
+        self.assertTrue(mock_input.called)
+        self.assertEqual(self.game.ante.value, 16)
+        self.assertEqual(self.game.players[1].gold, 8)
+        self.assertEqual(self.game.AIPlayer.gold, 8)
+        self.assertEqual(self.player.gold, 10)
+    
+    @patch("builtins.input", return_value="N")
+    def test_blue_card_power_to_player(self, mock_input):
+        self.player.flight = Flight()
+        self.player.flight.addCard(SilverCard(Value(9)))
+        self.player.flight.addCard(BlueCard(Value(3)))
+        card = BlueCard(Value(3))
+        card.power(self.player, self.game)
+
+        # Check if the player received the correct amount of gold
+        self.assertTrue(mock_input.called)
+        self.assertEqual(self.game.ante.value, 12)
+        self.assertEqual(self.game.players[1].gold, 9)
+        self.assertEqual(self.game.AIPlayer.gold, 9)
+        self.assertEqual(self.player.gold, 12)
+    
+    @patch("builtins.input", return_value="N")
+    def test_blue_card_power_to_AI(self, mock_input):
+        self.game.AIPlayer.flight = Flight()
+        self.game.AIPlayer.flight.addCard(SilverCard(Value(9)))
+        self.game.AIPlayer.flight.addCard(BlueCard(Value(3)))
+        card = BlueCard(Value(3))
+        card.power(self.game.AIPlayer, self.game)
+
+        # Check if the player received the correct amount of gold
+        self.assertTrue(mock_input.called)
+        self.assertEqual(self.game.ante.value, 12)
+        self.assertEqual(self.game.players[0].gold, 9)
+        self.assertEqual(self.game.players[1].gold, 9)
+        self.assertEqual(self.game.AIPlayer.gold, 12)
 
 if __name__ == "__main__":
     unittest.main()
