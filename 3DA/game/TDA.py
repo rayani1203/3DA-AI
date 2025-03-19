@@ -107,6 +107,8 @@ class TDA:
         else:
             newPrev = self.AIPlayer.playTurn(self, prev)
         return newPrev
+    
+    # def simulateTurn(self, prev: Value) -> Card:
 
     def endGambit(self):
         print()

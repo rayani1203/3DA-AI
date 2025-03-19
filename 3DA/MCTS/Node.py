@@ -9,11 +9,11 @@ class Node:
         self.visits = 0  # Number of times this node was visited
         self.totalScore = 0  # Number of wins from this node
 
-    def is_fully_expanded(self):
+    def isFullyExpanded(self):
         """Returns True if all possible moves have been explored."""
         return self.state.isGambitOver()
 
-    def best_child(self, exploration_weight=1.4):
+    def bestChild(self, exploration_weight=1.4):
         """Selects the best child using UCB1, handling unvisited nodes properly."""
         for child in self.children.values():
             if child.visits == 0:  
