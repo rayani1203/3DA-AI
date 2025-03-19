@@ -1,5 +1,6 @@
 from Node import Node
 from game.TDA import TDA
+from game.Card import Value
 import time
 
 class MCTS:
@@ -7,7 +8,7 @@ class MCTS:
         self.iterLimit = iters
         self.timeLimit = time #seconds
 
-    def search(self, state: TDA):
+    def search(self, state: TDA, prev: Value):
         root = Node(state)
 
         startTime = time.time()
@@ -28,5 +29,11 @@ class MCTS:
 
             if unexplored:
                 thisCard = unexplored[0]
-                newState = thisNode.state.copy()
-                
+                newState: TDA = thisNode.state.copy()
+                newState.simRound(prev, thisCard)
+                newNode = Node(newState, thisNode)
+                thisNode.children[thisCard] = newNode
+                thisNode = newNode
+            
+            #Step 3: Simulation
+            

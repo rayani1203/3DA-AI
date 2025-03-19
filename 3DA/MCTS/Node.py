@@ -11,7 +11,7 @@ class Node:
 
     def isFullyExpanded(self):
         """Returns True if all possible moves have been explored."""
-        return self.state.isGambitOver()
+        return len(self.children) == len(self.state.AIPlayer.cards) or self.state.isGambitOver()
 
     def bestChild(self, exploration_weight=1.4):
         """Selects the best child using UCB1, handling unvisited nodes properly."""

@@ -27,6 +27,13 @@ class AIPlayer:
             playCard.power(self, game.players)
         print(f"\n\n AI player's turn...\n***** AI ADVICE: play {playCard.color.value} {playCard.value.value}\n")
         return playCard
+
+    def simTurn(self, game: "TDA", prev: Value, chosen: Card) -> Card:
+        self.cards.remove(chosen)
+        self.flight.addCard(chosen)
+        if chosen.value.value <= prev.value:
+            chosen.power(self, game.players)
+        return chosen
     
     def decideCard(self, game: "TDA", value: Value, above: bool):
         """***TODO*** decide card / coin"""

@@ -107,8 +107,15 @@ class TDA:
         else:
             newPrev = self.AIPlayer.playTurn(self, prev)
         return newPrev
-    
-    # def simulateTurn(self, prev: Value) -> Card:
+
+    def simRound(self, prev: Value, choice: Card):
+        assert self.turn == self.numPlayers-1
+        self.AIPlayer.simTurn(self, prev, choice)
+        self.turn = 0
+        while len(self.players[self.turn].flight) < len(self.AIPlayer.flight):
+            self.players[self.turn].simTurn(prev, self)
+            self.turn += 1
+        
 
     def endGambit(self):
         print()

@@ -28,4 +28,15 @@ class Player:
             except:
                 print("Invalid input, try again\n")
     
+    def simTurn(self, prev: Value, game: "TDA") -> Card:
+        nextCard = self.determineNext(game)
+        self.cardCount -= 1
+        self.flight.addCard(nextCard)
+        if nextCard.value.value <= prev.value:
+            nextCard.power(self, game.players)
+        return nextCard
+
+    def determineNext(self, game: "TDA") -> Card:
+
+    
     """TODO: remove gold / hole"""
