@@ -172,3 +172,7 @@ class TDA:
         for i, player in enumerate(self.players):
             print(f"{i}: {player.cardCount}, {player.gold}")
         print()
+
+    def getGameScore(self):
+        return self.AIPlayer.gold + sum(card.coinValue for card in self.AIPlayer.cards)
+    

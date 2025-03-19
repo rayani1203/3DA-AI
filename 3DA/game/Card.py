@@ -33,6 +33,7 @@ class Card(ABC):
         self.color = color
         self.value = value
         self.good = None
+        self.coinValue = 3 + (value.value/3.6)
     
     @abstractmethod
     def power(self, player):
