@@ -1,5 +1,5 @@
 from typing import List
-from .Card import Card
+from Card import Card
 
 class Flight:
     def __init__(self):

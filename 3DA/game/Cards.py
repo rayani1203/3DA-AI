@@ -1,8 +1,8 @@
 from typing import Union
-from .Card import *
-from .TDA import TDA
-from .Player import Player
-from .AIPlayer import AIPlayer
+from Card import *
+from TDA import TDA
+from Player import Player
+from AIPlayer import AIPlayer
 
 # Subclasses for each color
 class GoldCard(Card):

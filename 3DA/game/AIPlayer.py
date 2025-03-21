@@ -1,6 +1,6 @@
 from typing import List, TYPE_CHECKING
-from .Card import *
-from .Flight import Flight
+from Card import *
+from Flight import Flight
 
 if TYPE_CHECKING:
     from game.TDA import TDA

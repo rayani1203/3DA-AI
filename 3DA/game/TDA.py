@@ -1,10 +1,10 @@
 from typing import List
-from .Card import *
-from .Cards import *
-from .Ante import Ante
-from .Flight import Flight
-from .AIPlayer import AIPlayer
-from .Player import Player
+from Card import *
+from Cards import *
+from Ante import Ante
+from Flight import Flight
+from AIPlayer import AIPlayer
+from Player import Player
 from collections import defaultdict
 
 class TDA:
