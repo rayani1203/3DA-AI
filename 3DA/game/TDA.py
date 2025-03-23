@@ -1,10 +1,10 @@
 from typing import List
-from Card import *
-from Cards import *
-from Ante import Ante
-from Flight import Flight
-from AIPlayer import AIPlayer
-from Player import Player
+from .Card import *
+import game.Cards as Cards
+from .Ante import Ante
+from .Flight import Flight
+from .AIPlayer import AIPlayer
+from .Player import Player
 from collections import defaultdict
 
 class TDA:
@@ -38,10 +38,10 @@ class TDA:
                 [colorInput, valueInput] = cardInput.split(" ")
                 color = Color(colorInput.capitalize())
                 value = Value(int(valueInput))
-                thisAnteCards.append(COLOR_TO_CLASS[color](value))
+                thisAnteCards.append(Cards.COLOR_TO_CLASS[color](value))
                 self.players[len(thisAnteCards)-1].cardCount -= 1
-            except:
-                print("Invalid input, try again\n")
+            except Exception as e:
+                print(f"Invalid input, try again\nexception: {e}")
         
         thisAnteCards.append(AIAnte)
         startIdx = self.findStart(thisAnteCards)
@@ -55,7 +55,7 @@ class TDA:
                     [colorInput, valueInput] = newCard.split(" ")
                     color = Color(colorInput.capitalize())
                     value = Value(int(valueInput))
-                    self.AIPlayer.cards.append(COLOR_TO_CLASS[color](value))
+                    self.AIPlayer.cards.append(Cards.COLOR_TO_CLASS[color](value))
                     break
                 except:
                     print("Invalid input, try again\n")
@@ -109,12 +109,20 @@ class TDA:
         return newPrev
 
     def simRound(self, prev: Value, choice: Card):
+        while self.turn < self.numPlayers-1:
+            self.players[self.turn].simTurn(prev, self)
+            self.turn += 1
         assert self.turn == self.numPlayers-1
         self.AIPlayer.simTurn(self, prev, choice)
         self.turn = 0
-        while len(self.players[self.turn].flight) < len(self.AIPlayer.flight):
+        while len(self.players[self.turn].flight.cards) < len(self.AIPlayer.flight.cards):
             self.players[self.turn].simTurn(prev, self)
             self.turn += 1
+            if self.turn == self.numPlayers-1:
+                break
+        newStart = self.findStart([player.flight.cards[-1] for player in self.players] + [self.AIPlayer.flight.cards[-1]])
+        if newStart != -1:
+            self.turn = newStart
         
 
     def endGambit(self):
@@ -150,7 +158,7 @@ class TDA:
                     [colorInput, valueInput] = cardInput.split(" ")
                     color = Color(colorInput.capitalize())
                     value = Value(int(valueInput))
-                    thisCard: Card = COLOR_TO_CLASS[color](value)
+                    thisCard: Card = Cards.COLOR_TO_CLASS[color](value)
                     self.AIPlayer.cards.append(thisCard)
                     break
                 except Exception as e:

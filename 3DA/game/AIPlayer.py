@@ -1,15 +1,17 @@
 from typing import List, TYPE_CHECKING
-from Card import *
-from Flight import Flight
+from .Card import *
+from .Flight import Flight
+from MCTS.MCTS import MCTS
 
 if TYPE_CHECKING:
-    from game.TDA import TDA
+    from .TDA import TDA
 
 class AIPlayer:
     def __init__(self, gold: int, cards: List[Card]):
         self.gold = gold
         self.cards = cards
         self.flight = Flight()
+        self.MCTS = MCTS(100000, 20)
     
     def ante(self, game: "TDA"):
         """***TODO***"""
@@ -19,20 +21,22 @@ class AIPlayer:
         return anteCard
     
     def playTurn(self, game: "TDA", prev: Value) -> Card:
-        "***TODO***"
-        playCard = self.cards[0]
+        playCard = self.MCTS.search(game, prev)
         self.cards.pop(0)
         self.flight.addCard(playCard)
         if playCard.value.value <= prev.value:
-            playCard.power(self, game.players)
+            playCard.power(self, game)
         print(f"\n\n AI player's turn...\n***** AI ADVICE: play {playCard.color.value} {playCard.value.value}\n")
         return playCard
 
     def simTurn(self, game: "TDA", prev: Value, chosen: Card) -> Card:
-        self.cards.remove(chosen)
+        for card in self.cards:
+            if card.value == chosen.value and card.color == chosen.color:
+                self.cards.remove(card)
+                break
         self.flight.addCard(chosen)
         if chosen.value.value <= prev.value:
-            chosen.power(self, game.players)
+            chosen.power(self, game, True)
         return chosen
     
     def decideCard(self, game: "TDA", value: Value, above: bool):

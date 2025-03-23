@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from Cards import *
-from Card import *
-from Player import Player
-from Ante import Ante
-from Flight import Flight
+from .Cards import *
+from .Card import *
+from .Player import Player
+from .Ante import Ante
+from .Flight import Flight
 
 class TestGoldCard(unittest.TestCase):
     def setUp(self):

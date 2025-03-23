@@ -1,7 +1,7 @@
 from typing import List
-from Card import *
-from Cards import *
-from TDA import TDA
+from game.Card import *
+from game.Cards import *
+from game.TDA import TDA
 
 def play_game():
     print("*** WELCOME to 3DA AI ***\n\n")

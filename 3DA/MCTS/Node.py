@@ -1,4 +1,4 @@
-from game.TDA import TDA
+import game.TDA as TDA
 import math
 
 class Node:

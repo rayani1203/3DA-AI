@@ -1,12 +1,12 @@
-from Flight import Flight
-from Card import *
-import Cards
+from .Flight import Flight
+from .Card import *
+import game.Cards as Cards
 from typing import TYPE_CHECKING
 import random
 import math
 
 if TYPE_CHECKING:
-    from game.TDA import TDA
+    from .TDA import TDA
 
 
 class Player:
@@ -42,7 +42,7 @@ class Player:
                 self.flight.addCard(thisCard)
                 self.bayesianUpdate()
                 if thisCard.value.value <= prev.value:
-                    thisCard.power(self, game.players)
+                    thisCard.power(self, game)
                 return thisCard
             except Exception as e:
                 print(f"Invalid input, try again\nError: {e}")
@@ -52,7 +52,7 @@ class Player:
         self.cardCount -= 1
         self.flight.addCard(nextCard)
         if nextCard.value.value <= prev.value:
-            nextCard.power(self, game.players)
+            nextCard.power(self, game, True)
         return nextCard
 
     def determineNext(self) -> Card:

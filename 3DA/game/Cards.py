@@ -1,8 +1,14 @@
 from typing import Union
-from Card import *
-from TDA import TDA
-from Player import Player
-from AIPlayer import AIPlayer
+from .Card import *
+from .TDA import TDA
+from .Player import Player
+from .AIPlayer import AIPlayer
+import random
+
+def randomCard():
+    color = random.choice(list(Color))
+    value = random.choice(list(Value))
+    return COLOR_TO_CLASS[color](value)
 
 # Subclasses for each color
 class GoldCard(Card):
@@ -10,7 +16,7 @@ class GoldCard(Card):
         super().__init__(Color.Gold, value)
         self.good = True
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         print(f"Receiving {player.flight.goods} cards")
         if isinstance(player, Player):
@@ -18,66 +24,75 @@ class GoldCard(Card):
         else:
             cardsReceived = player.flight.goods
             for _ in range(cardsReceived):
-                cardInput = input("Enter a card to add to AI player's hand:\n")
-                try:
-                    colorInput, valueInput = cardInput.split(" ")
-                    color = Color(colorInput.capitalize())
-                    value = Value(int(valueInput))
-                    newCard = COLOR_TO_CLASS[color](value)
-                    player.cards.append(newCard)
-                except Exception:
-                    print("Invalid input, try again\n")
+                if not isSim:
+                    cardInput = input("Enter a card to add to AI player's hand:\n")
+                    try:
+                        colorInput, valueInput = cardInput.split(" ")
+                        color = Color(colorInput.capitalize())
+                        value = Value(int(valueInput))
+                        newCard = COLOR_TO_CLASS[color](value)
+                        player.cards.append(newCard)
+                    except Exception:
+                        print("Invalid input, try again\n")
+                else:
+                    player.cards.append(randomCard())
 
 class SilverCard(Card):
     def __init__(self, value: Value):
         super().__init__(Color.Silver, value)
         self.good = True
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         for p in game.players:
             if p.flight.goods > 0:
                 p.cardCount += 1
         if game.AIPlayer.flight.goods > 0:
-            while True:
-                cardInput = input("Enter a card to add to AI player's hand:\n")
-                try:
-                    colorInput, valueInput = cardInput.split(" ")
-                    color = Color(colorInput.capitalize())
-                    value = Value(int(valueInput))
-                    newCard = COLOR_TO_CLASS[color](value)
-                    game.AIPlayer.cards.append(newCard)
-                    break
-                except Exception:
-                    print("Invalid input, try again\n")
+            if not isSim:
+                while True:
+                    cardInput = input("Enter a card to add to AI player's hand:\n")
+                    try:
+                        colorInput, valueInput = cardInput.split(" ")
+                        color = Color(colorInput.capitalize())
+                        value = Value(int(valueInput))
+                        newCard = COLOR_TO_CLASS[color](value)
+                        game.AIPlayer.cards.append(newCard)
+                        break
+                    except Exception:
+                        print("Invalid input, try again\n")
+            else:
+                game.AIPlayer.cards.append(randomCard())
 
 class CopperCard(Card):
     def __init__(self, value: Value):
         super().__init__(Color.Copper, value)
         self.good = True
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
-        while True:
-            cardInput = input("Enter the card that is drawn from the deck:\n")
-            try:
-                colorInput, valueInput = cardInput.split(" ")
-                color = Color(colorInput.capitalize())
-                value = Value(int(valueInput))
-                newCard: Card = COLOR_TO_CLASS[color](value)
-                break
-            except Exception:
-                print("Invalid input, try again\n")
+        if not isSim:
+            while True:
+                cardInput = input("Enter the card that is drawn from the deck:\n")
+                try:
+                    colorInput, valueInput = cardInput.split(" ")
+                    color = Color(colorInput.capitalize())
+                    value = Value(int(valueInput))
+                    newCard: Card = COLOR_TO_CLASS[color](value)
+                    break
+                except Exception:
+                    print("Invalid input, try again\n")
+        else:
+            newCard = randomCard()
         player.flight.cards.pop(-1)
         player.flight.addCard(newCard)
-        newCard.power(player, game)
+        newCard.power(player, game, isSim)
 
 class BronzeCard(Card):
     def __init__(self, value: Value):
         super().__init__(Color.Bronze, value)
         self.good = True
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         anteCards = game.ante.cards
         anteCards.sort(key=lambda card: card.value.value)
@@ -96,7 +111,7 @@ class BrassCard(Card):
         super().__init__(Color.Brass, value)
         self.good = True
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         toAI = False
         if isinstance(player, AIPlayer):
@@ -117,7 +132,11 @@ class BrassCard(Card):
                 return
             else:
                 idx -= 1
-        (gives, card) = card_coin_choice(game.players[idx], game, self.value, True, toAI)
+        if not isSim:
+            (gives, card) = card_coin_choice(game.players[idx], game, self.value, True, toAI)
+        else:
+            gives = random.choice([True, False])
+            card = randomCard()
         if gives:
             if isinstance(player, Player):
                 player.cardCount += 1
@@ -131,7 +150,7 @@ class RedCard(Card):
         super().__init__(Color.Red, value)
         self.good = False
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         highest = -1
         biggest = []
@@ -149,12 +168,15 @@ class RedCard(Card):
             elif game.AIPlayer.flight.total == highest:
                 biggest.append(game.numPlayers - 1)
         if len(biggest) > 1:
-            while True:
-                try:
-                    selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {biggest}"))
-                    break
-                except:
-                    print("Invalid input, enter an integer")
+            if not isSim:
+                while True:
+                    try:
+                        selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {biggest}"))
+                        break
+                    except:
+                        print("Invalid input, enter an integer")
+            else:
+                selectedOpp = random.choice(biggest)
         else:
             selectedOpp = biggest[0]
         if selectedOpp < game.numPlayers - 1:
@@ -163,41 +185,47 @@ class RedCard(Card):
         else:
             game.AIPlayer.gold -= 1
             print("Drawing from AI...")
-            while True:
-                cardInput = input("Enter the card drawn from AI player's hand:\n")
-                try:
-                    colorInput, valueInput = cardInput.split(" ")
-                    color = Color(colorInput.capitalize())
-                    value = Value(int(valueInput))
-                    cardToRemove = next(card for card in game.AIPlayer.cards if card.color == color and card.value == value)
-                    game.AIPlayer.cards.remove(cardToRemove)
-                    break
-                except StopIteration:
-                    print("Card not found in AI player's hand, try again\n")
-                except Exception:
-                    print("Invalid input, try again\n")
+            if not isSim:
+                while True:
+                    cardInput = input("Enter the card drawn from AI player's hand:\n")
+                    try:
+                        colorInput, valueInput = cardInput.split(" ")
+                        color = Color(colorInput.capitalize())
+                        value = Value(int(valueInput))
+                        cardToRemove = next(card for card in game.AIPlayer.cards if card.color == color and card.value == value)
+                        game.AIPlayer.cards.remove(cardToRemove)
+                        break
+                    except StopIteration:
+                        print("Card not found in AI player's hand, try again\n")
+                    except Exception:
+                        print("Invalid input, try again\n")
+            else:
+                game.AIPlayer.cards.remove(random.choice(game.AIPlayer.cards))
 
         player.gold += 1
         if isinstance(player, Player):
             player.cardCount += 1
         else:
-            while True:
-                cardInput = input("Enter the card added to the AI player's hand:\n")
-                try:
-                    colorInput, valueInput = cardInput.split(" ")
-                    color = Color(colorInput.capitalize())
-                    value = Value(int(valueInput))
-                    player.cards.append(COLOR_TO_CLASS[color](value))
-                    break
-                except:
-                    print("Invalid input, try again\n")
+            if not isSim:
+                while True:
+                    cardInput = input("Enter the card added to the AI player's hand:\n")
+                    try:
+                        colorInput, valueInput = cardInput.split(" ")
+                        color = Color(colorInput.capitalize())
+                        value = Value(int(valueInput))
+                        player.cards.append(COLOR_TO_CLASS[color](value))
+                        break
+                    except:
+                        print("Invalid input, try again\n")
+            else:
+                player.cards.append(randomCard())
 
 class BlackCard(Card):
     def __init__(self, value: Value):
         super().__init__(Color.Black, value)
         self.good = False
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         amount = min(3, game.ante.value)
         game.ante.value -= amount
@@ -208,7 +236,7 @@ class GreenCard(Card):
         super().__init__(Color.Green, value)
         self.good = False
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         toAI = False
         if isinstance(player, AIPlayer):
@@ -229,7 +257,11 @@ class GreenCard(Card):
                 return
             else:
                 idx += 1
-        (gives, card) = card_coin_choice(game.players[idx], game, self.value, False, toAI)
+        if not isSim:
+            (gives, card) = card_coin_choice(game.players[idx], game, self.value, False, toAI)
+        else:
+            gives = random.choice([True, False])
+            card = randomCard()
         if gives:
             if isinstance(player, Player):
                 player.cardCount += 1
@@ -243,7 +275,7 @@ class WhiteCard(Card):
         super().__init__(Color.White, value)
         self.good = False
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
         weakest = float('inf')
         weakest_opponents = []
@@ -261,15 +293,17 @@ class WhiteCard(Card):
             elif game.AIPlayer.flight.total == weakest:
                 weakest_opponents.append(game.numPlayers - 1)
         if len(weakest_opponents) > 1:
-            while True:
-                try:
-                    selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {weakest_opponents}"))
-                    break
-                except:
-                    print("Invalid input, enter an integer")
+            if not isSim:
+                while True:
+                    try:
+                        selectedOpp = int(input(f"Player must select which opponent to draw from\noptions: {weakest_opponents}"))
+                        break
+                    except:
+                        print("Invalid input, enter an integer")
+            else:
+                selectedOpp = random.choice(weakest_opponents)
         else:
             selectedOpp = weakest_opponents[0]
-        print(selectedOpp)
         if selectedOpp < game.numPlayers - 1:
             game.players[selectedOpp].gold -= 2
         else:
@@ -282,17 +316,20 @@ class BlueCard(Card):
         super().__init__(Color.Blue, value)
         self.good = False
     
-    def power(self, player: Union["Player", "AIPlayer"], game: TDA):
+    def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
         print(f"{self.color} dragon triggers...")
-        while True:
-            addAnteInput = input("Option: Enter 'Y' if you would like to add money to the stakes, and 'N' if you'd like 1 from each opponent")
-            if addAnteInput.capitalize() == 'Y':
-                addAnte = True
-            elif addAnteInput.capitalize() == 'N':
-                addAnte = False
-            else:
-                continue
-            break
+        if not isSim:
+            while True:
+                addAnteInput = input("Option: Enter 'Y' if you would like to add money to the stakes, and 'N' if you'd like 1 from each opponent")
+                if addAnteInput.capitalize() == 'Y':
+                    addAnte = True
+                elif addAnteInput.capitalize() == 'N':
+                    addAnte = False
+                else:
+                    continue
+                break
+        else:
+            addAnte = random.choice([True, False])
         if addAnte:
             amount = len(player.flight.cards)
             for opp in game.players:
