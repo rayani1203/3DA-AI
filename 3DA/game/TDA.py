@@ -6,6 +6,7 @@ from .Flight import Flight
 from .AIPlayer import AIPlayer
 from .Player import Player
 from collections import defaultdict
+import random
 
 class TDA:
     def __init__(self, numPlayers: int, playerGold: int, AICards: List[Card]):
@@ -16,6 +17,8 @@ class TDA:
         self.AIPlayer = AIPlayer(playerGold*numPlayers, AICards)
         self.ante: Ante = None
         self.turn: int = None
+        self.prev = Value(13)
+        self.playerGold = playerGold
     
     def isGameOver(self):
         return min(self.players, key=lambda player:player.gold).gold < 0
@@ -88,11 +91,11 @@ class TDA:
     def playRound(self, roundNum: int):
         print(f"Beginning round {roundNum}, starting with player {self.turn}")
         turns = 0
-        prevVal = Value.Thirteen
         thisRound : List[Card] = [None] * self.numPlayers
+        self.prev = Value(13)
         while turns < self.numPlayers:
-            playedCard = self.playTurn(prevVal)
-            prevVal = playedCard.value
+            playedCard = self.playTurn()
+            self.prev = playedCard.value
             turns += 1
             thisRound[self.turn] = playedCard
             self.turn = (self.turn + 1)%self.numPlayers
@@ -100,29 +103,29 @@ class TDA:
         if newStart != -1:
             self.turn = newStart
     
-    def playTurn(self, prev: Value) -> Card:
+    def playTurn(self) -> Card:
         if self.turn != self.numPlayers-1:
             print(f"Player {self.turn} turn...")
-            newPrev = self.players[self.turn].playTurn(prev, self)
+            newPrev = self.players[self.turn].playTurn(self.prev, self)
         else:
-            newPrev = self.AIPlayer.playTurn(self, prev)
+            newPrev = self.AIPlayer.playTurn(self, self.prev)
         return newPrev
 
-    def simRound(self, prev: Value, choice: Card):
-        while self.turn < self.numPlayers-1:
-            self.players[self.turn].simTurn(prev, self)
-            self.turn += 1
-        assert self.turn == self.numPlayers-1
-        self.AIPlayer.simTurn(self, prev, choice)
-        self.turn = 0
-        while len(self.players[self.turn].flight.cards) < len(self.AIPlayer.flight.cards):
-            self.players[self.turn].simTurn(prev, self)
-            self.turn += 1
-            if self.turn == self.numPlayers-1:
-                break
-        newStart = self.findStart([player.flight.cards[-1] for player in self.players] + [self.AIPlayer.flight.cards[-1]])
-        if newStart != -1:
-            self.turn = newStart
+    def simTurn(self, choice: Card):
+        if all(len(player.flight.cards) > 0 for player in self.players) and len(self.AIPlayer.flight.cards) > 0:
+            if all(len(player.flight.cards) == len(self.players[0].flight.cards) for player in self.players) and len(self.AIPlayer.flight.cards) == len(self.players[0].flight.cards):
+                newStart = self.findStart([player.flight.cards[-1] for player in self.players] + [self.AIPlayer.flight.cards[-1]])
+                if newStart != -1:
+                    self.turn = newStart
+                    self.prev = Value(13)
+        print(f"simulating turn for player {self.turn}...")
+        if self.turn == self.numPlayers-1:
+            used = self.AIPlayer.simTurn(self, self.prev, choice)
+        else:
+            used = self.players[self.turn].simTurn(self.prev, self)
+        self.turn = (self.turn + 1)%self.numPlayers
+        return used.value
+        
         
 
     def endGambit(self):
@@ -191,5 +194,35 @@ class TDA:
         print()
 
     def getGameScore(self):
+        """***TODO***"""
         return self.AIPlayer.gold + sum(card.coinValue for card in self.AIPlayer.cards)
     
+    def buyCards(self, num: int = 3, isSim: bool = False):
+        if not isSim:
+            while True:
+                try:
+                    payment = int(input("Need to BUY. Enter how much to buy for: "))
+                    if 1 <= payment <= 13:
+                        break
+                    else:
+                        print("Please enter a valid number between 1 and 13.")
+                except ValueError:
+                    print("Invalid input. Please enter an integer.")
+            cards = []
+            for _ in range(num):
+                while True:
+                    try:
+                        color = input("Enter card color: ").capitalize()
+                        value = int(input("Enter card value: "))
+                        cards.append(Card(Color(color), Value(value)))
+                        break
+                    except Exception as e:
+                        print(f"Invalid input. Error: {e}")
+        else:
+            payment = random.randint(1, 13)
+            cards = []
+            for _ in range(num):
+                color = random.choice(list(Cards.COLOR_TO_CLASS.keys()))
+                value = random.randint(1, 13)
+                cards.append(Cards.COLOR_TO_CLASS[color](Value(value)))
+        return (payment, cards)

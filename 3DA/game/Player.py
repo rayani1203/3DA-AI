@@ -31,6 +31,10 @@ class Player:
         }
     
     def playTurn(self, prev: Value, game: "TDA") -> Card:
+        if self.cardCount <= 1:
+            (payment, cards) = game.buyCards()
+            self.gold -= payment
+            self.cardCount += len(cards)
         while True:
             cardInput = input("please enter the card they played\n")
             try:
@@ -48,6 +52,10 @@ class Player:
                 print(f"Invalid input, try again\nError: {e}")
     
     def simTurn(self, prev: Value, game: "TDA") -> Card:
+        if self.cardCount <= 1:
+            (payment, cards) = game.buyCards((4-self.cardCount), True)
+            self.gold -= payment
+            self.cardCount += len(cards)
         nextCard = self.determineNext()
         self.cardCount -= 1
         self.flight.addCard(nextCard)

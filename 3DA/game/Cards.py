@@ -124,7 +124,7 @@ class BrassCard(Card):
                     idx = i
                     break
             if idx == 0:
-                card = game.AIPlayer.decideCard(game, self.value, True)
+                card = game.AIPlayer.decideCard(game, self.value, True, isSim)
                 if card:
                     player.cardCount += 1
                 else:
@@ -182,6 +182,13 @@ class RedCard(Card):
         if selectedOpp < game.numPlayers - 1:
             game.players[selectedOpp].gold -= 1
             game.players[selectedOpp].cardCount -= 1
+            if game.players[selectedOpp].cardCount == 0:
+                if isSim:
+                    (payment, cards) = game.buyCards(4, True)
+                else:
+                    (payment, cards) = game.buyCards(4)
+                game.players[selectedOpp].gold -= payment
+                game.players[selectedOpp].cardCount += len(cards)
         else:
             game.AIPlayer.gold -= 1
             print("Drawing from AI...")
@@ -201,6 +208,13 @@ class RedCard(Card):
                         print("Invalid input, try again\n")
             else:
                 game.AIPlayer.cards.remove(random.choice(game.AIPlayer.cards))
+            if len(game.AIPlayer.cards) == 0:
+                if isSim:
+                    (payment, cards) = game.buyCards(4, True)
+                else:
+                    (payment, cards) = game.buyCards(4)
+                game.AIPlayer.gold -= payment
+                game.AIPlayer.cards += cards
 
         player.gold += 1
         if isinstance(player, Player):
@@ -249,7 +263,7 @@ class GreenCard(Card):
                     idx = i
                     break
             if idx == len(game.players)-1:
-                card = game.AIPlayer.decideCard(game, self.value, False)
+                card = game.AIPlayer.decideCard(game, self.value, False, isSim)
                 if card:
                     player.cardCount += 1
                 else:
@@ -362,7 +376,7 @@ COLOR_TO_CLASS: Card = {
 
 def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, above: bool, toAI: bool):
     if isinstance(receiver, AIPlayer):
-        return receiver.decideCard(game, value, above)
+        return receiver.decideCard(game, value, above, False)
     else:
         choice = input("Would you like to give a card? (Y/N)\n").strip().upper()
         if choice == 'Y':
@@ -375,6 +389,10 @@ def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, 
                         value = Value(int(valueInput))
                         cardToGive = COLOR_TO_CLASS[color](value)
                         receiver.cardCount -= 1
+                        if receiver.cardCount == 0:
+                            (payment, cards) = game.buyCards(4)
+                            receiver.gold -= payment
+                            receiver.cardCount += len(cards)
                         return (True, cardToGive)
                     except StopIteration:
                         print("Card not found in player's hand, try again\n")
@@ -382,6 +400,10 @@ def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, 
                         print("Invalid input, try again\n")
             else:
                 receiver.cardCount -= 1
+                if receiver.cardCount == 0:
+                    (payment, cards) = game.buyCards(4)
+                    receiver.gold -= payment
+                    receiver.cardCount += len(cards)
                 return (True, None)
         else:
             receiver.gold -= 5
