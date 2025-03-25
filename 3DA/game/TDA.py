@@ -124,11 +124,40 @@ class TDA:
         else:
             used = self.players[self.turn].simTurn(self.prev, self)
         self.turn = (self.turn + 1)%self.numPlayers
-        return used.value
+        self.prev = used.value
         
+    def doColorFlights(self):
+        toRemove = 0
+        for player in self.players:
+            color_counts = defaultdict(lambda: {'count': 0, 'values': []})
+            for card in player.flight.cards:
+                color_counts[card.color]['count'] += 1
+                color_counts[card.color]['values'].append(card.value.value)
+            for color, props in color_counts.items():
+                if props['count'] >= 3:
+                    props['values'].sort()
+                    flightVal = props['values'][1]
+                    player.gold += flightVal*self.numPlayers
+                    toRemove += flightVal
+                
+        color_counts = defaultdict(lambda: {'count': 0, 'values': []})
+        for card in self.AIPlayer.flight.cards:
+            color_counts[card.color]['count'] += 1
+            color_counts[card.color]['values'].append(card.value.value)
+        for color, props in color_counts.items():
+            if props['count'] >= 3:
+                props['values'].sort()
+                flightVal = props['values'][1]
+                self.AIPlayer.gold += flightVal*self.numPlayers
+                toRemove += flightVal
         
+        for player in self.players:
+            player.gold -= toRemove
+        self.AIPlayer.gold -= toRemove
 
     def endGambit(self):
+        self.doColorFlights()
+
         print()
 
         winner = None
@@ -143,6 +172,7 @@ class TDA:
             print("AI won!!!")
         else:
             print("AI did not win...")
+
         self.AIPlayer.flight = Flight()
         winner.gold += self.ante.value
 

@@ -13,6 +13,12 @@ class MCTS:
         self.timeLimit = time #seconds
 
     def search(self, state: TDA):
+        while True:
+            user = input("Simulate AI turn? (y)\n")
+            if user == "y":
+                break
+            else:
+                print("Invalid input, try again")
         root = Node(state)
 
         startTime = time.time()
@@ -27,8 +33,6 @@ class MCTS:
             #Step 1: Selection
             while thisNode.isFullyExpanded() and thisNode.children:
                 print("Selecting best child...\n")
-                print()
-                print(thisNode.children)
                 print()
                 thisNode = thisNode.bestChild()
                 parent = thisNode.parent
@@ -80,7 +84,8 @@ class MCTS:
                 thisNode = thisNode.parent
 
         print("------ search complete --------")
-        print([(child, root.children[child].totalScore) for child in root.children])
-        return max(root.children, key=lambda card: 
-                   (root.children[card].totalScore / root.children[card].visits) 
-                   + math.sqrt(math.log(1 + root.visits) / (1 + root.children[card].visits)))
+        print([(child, root.children[child].totalScore, root.children[child].visits) for child in root.children])
+        for move in root.children:
+            node = root.children[move]
+            print([(child, node.children[child].totalScore, node.children[child].visits) for child in node.children])
+        return max(root.children, key=lambda card: (root.children[card].totalScore / root.children[card].visits))

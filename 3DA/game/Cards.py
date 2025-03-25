@@ -17,7 +17,7 @@ class GoldCard(Card):
         self.good = True
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         print(f"Receiving {player.flight.goods} cards")
         if isinstance(player, Player):
             player.cardCount += player.flight.goods
@@ -43,7 +43,7 @@ class SilverCard(Card):
         self.good = True
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         for p in game.players:
             if p.flight.goods > 0:
                 p.cardCount += 1
@@ -69,7 +69,7 @@ class CopperCard(Card):
         self.good = True
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         if not isSim:
             while True:
                 cardInput = input("Enter the card that is drawn from the deck:\n")
@@ -84,7 +84,7 @@ class CopperCard(Card):
         else:
             newCard = randomCard()
         player.flight.cards.pop(-1)
-        player.flight.addCard(newCard)
+        player.flight.addCard(newCard, game.ante, player, isSim)
         newCard.power(player, game, isSim)
 
 class BronzeCard(Card):
@@ -93,7 +93,7 @@ class BronzeCard(Card):
         self.good = True
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         anteCards = game.ante.cards
         anteCards.sort(key=lambda card: card.value.value)
         cards = 0
@@ -112,7 +112,7 @@ class BrassCard(Card):
         self.good = True
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         toAI = False
         if isinstance(player, AIPlayer):
             idx = -1
@@ -151,7 +151,7 @@ class RedCard(Card):
         self.good = False
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         highest = -1
         biggest = []
         for i, opp in enumerate(game.players):
@@ -240,7 +240,7 @@ class BlackCard(Card):
         self.good = False
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         amount = min(3, game.ante.value)
         game.ante.value -= amount
         player.gold += amount
@@ -251,7 +251,7 @@ class GreenCard(Card):
         self.good = False
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         toAI = False
         if isinstance(player, AIPlayer):
             idx = 0
@@ -290,7 +290,7 @@ class WhiteCard(Card):
         self.good = False
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         weakest = float('inf')
         weakest_opponents = []
         for i, opp in enumerate(game.players):
@@ -331,7 +331,7 @@ class BlueCard(Card):
         self.good = False
     
     def power(self, player: Union["Player", "AIPlayer"], game: TDA, isSim : bool = False):
-        print(f"{self.color} dragon triggers...")
+        print(f"{self.color} {self.value.value} dragon triggers...")
         if not isSim:
             while True:
                 addAnteInput = input("Option: Enter 'Y' if you would like to add money to the stakes, and 'N' if you'd like 1 from each opponent")

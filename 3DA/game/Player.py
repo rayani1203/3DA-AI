@@ -1,4 +1,4 @@
-from .Flight import Flight
+import game.Flight as Flight
 from .Card import *
 import game.Cards as Cards
 from typing import TYPE_CHECKING
@@ -13,7 +13,7 @@ class Player:
     def __init__(self, gold: int, cardCount: int=6):
         self.gold = gold
         self.cardCount = cardCount
-        self.flight = Flight()
+        self.flight = Flight.Flight()
         self.NumToProb = {
             1: 0.0090,
             2: 0.0218,
@@ -43,7 +43,7 @@ class Player:
                 value = Value(int(valueInput))
                 thisCard: Card = Cards.COLOR_TO_CLASS[color](value)
                 self.cardCount -= 1
-                self.flight.addCard(thisCard)
+                self.flight.addCard(thisCard, game.ante, self)
                 self.bayesianUpdate()
                 if thisCard.value.value <= prev.value:
                     thisCard.power(self, game)
@@ -58,7 +58,7 @@ class Player:
             self.cardCount += len(cards)
         nextCard = self.determineNext()
         self.cardCount -= 1
-        self.flight.addCard(nextCard)
+        self.flight.addCard(nextCard, game.ante, self, True)
         if nextCard.value.value <= prev.value:
             nextCard.power(self, game, True)
         return nextCard

@@ -1,6 +1,6 @@
 from typing import List, TYPE_CHECKING
 from .Card import *
-from .Flight import Flight
+import game.Flight as Flight
 from MCTS.MCTS import MCTS
 
 if TYPE_CHECKING:
@@ -10,8 +10,8 @@ class AIPlayer:
     def __init__(self, gold: int, cards: List[Card]):
         self.gold = gold
         self.cards = cards
-        self.flight = Flight()
-        self.MCTS = MCTS(10000, 20)
+        self.flight = Flight.Flight()
+        self.MCTS = MCTS(100000, 20)
     
     def ante(self, game: "TDA"):
         """***TODO***"""
@@ -33,7 +33,7 @@ class AIPlayer:
                 self.cards.remove(card)
                 break
         assert len(self.cards) == prevAmount - 1
-        self.flight.addCard(playCard)
+        self.flight.addCard(playCard, game.ante, self)
         if playCard.value.value <= prev.value:
             playCard.power(self, game)
         return playCard
@@ -47,7 +47,7 @@ class AIPlayer:
             if card.value == chosen.value and card.color == chosen.color:
                 self.cards.remove(card)
                 break
-        self.flight.addCard(chosen)
+        self.flight.addCard(chosen, game.ante, self, True)
         if chosen.value.value <= prev.value:
             chosen.power(self, game, True)
         return chosen

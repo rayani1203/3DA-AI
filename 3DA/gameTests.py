@@ -279,8 +279,8 @@ class TestBlueCard(unittest.TestCase):
     @patch("builtins.input", return_value="Y")
     def test_blue_card_power_to_ante(self, mock_input):
         self.player.flight = Flight()
-        self.player.flight.addCard(SilverCard(Value(9)))
-        self.player.flight.addCard(BlueCard(Value(3)))
+        self.player.flight.addCard(SilverCard(Value(9)), self.game.ante, self.player)
+        self.player.flight.addCard(BlueCard(Value(3)), self.game.ante, self.player)
         card = BlueCard(Value(3))
         card.power(self.player, self.game)
 
@@ -294,8 +294,8 @@ class TestBlueCard(unittest.TestCase):
     @patch("builtins.input", return_value="N")
     def test_blue_card_power_to_player(self, mock_input):
         self.player.flight = Flight()
-        self.player.flight.addCard(SilverCard(Value(9)))
-        self.player.flight.addCard(BlueCard(Value(3)))
+        self.player.flight.addCard(SilverCard(Value(9)), self.game.ante, self.player)
+        self.player.flight.addCard(BlueCard(Value(3)), self.game.ante, self.player)
         card = BlueCard(Value(3))
         card.power(self.player, self.game)
 
@@ -309,8 +309,8 @@ class TestBlueCard(unittest.TestCase):
     @patch("builtins.input", return_value="N")
     def test_blue_card_power_to_AI(self, mock_input):
         self.game.AIPlayer.flight = Flight()
-        self.game.AIPlayer.flight.addCard(SilverCard(Value(9)))
-        self.game.AIPlayer.flight.addCard(BlueCard(Value(3)))
+        self.game.AIPlayer.flight.addCard(SilverCard(Value(9)), self.game.ante, self.game.AIPlayer)
+        self.game.AIPlayer.flight.addCard(BlueCard(Value(3)), self.game.ante, self.game.AIPlayer)
         card = BlueCard(Value(3))
         card.power(self.game.AIPlayer, self.game)
 
@@ -329,12 +329,59 @@ class TestPlayerPrediction(unittest.TestCase):
         
         # Mock player turns to add cards to their flights
         self.game.players[0].playTurn(Value(2), self.game)
-        self.game.players[0].playTurn(Value(2), self.game)
-        self.game.players[1].playTurn(Value(2), self.game)
         self.game.players[1].playTurn(Value(2), self.game)
 
     def test_player_determine_next(self):
         print(self.game.players[0].determineNext().color, self.game.players[0].determineNext().value)
         print(self.game.players[1].determineNext().color, self.game.players[1].determineNext().value)
+    
+class TestColorFlight(unittest.TestCase):
+    def setUp(self):
+        self.game = TDA(3, 10, [GoldCard(Value(5)), SilverCard(Value(3)), BlueCard(Value(2)), RedCard(Value(4)), BronzeCard(Value(1)), GreenCard(Value(6))])
+        self.game.players = [Player(30), Player(30)]
+        self.game.players[0].flight = Flight()
+        self.game.players[1].flight = Flight()
+        self.game.ante = Ante([BrassCard(Value(6)), RedCard(Value(3)), BlueCard(Value(2))])
+        self.game.players[0].flight.addCard(GoldCard(Value(5)), self.game.ante, self.game.players[0])
+        self.game.players[0].flight.addCard(GoldCard(Value(3)), self.game.ante, self.game.players[0])
+        self.game.players[1].flight.addCard(SilverCard(Value(3)), self.game.ante, self.game.players[1])
+        self.game.players[1].flight.addCard(SilverCard(Value(5)), self.game.ante, self.game.players[1])
+
+    def test_flight_add_card(self):
+        self.game.players[0].flight.addCard(GoldCard(Value(7)), self.game.ante, self.game.players[0])
+        self.game.players[1].flight.addCard(SilverCard(Value(4)), self.game.ante, self.game.players[1])
+        self.game.endGambit()
+
+        # Check if the players received the correct number of cards
+        self.assertEqual(self.game.players[0].gold, 54)
+        self.assertEqual(self.game.players[1].gold, 33)
+        self.assertEqual(self.game.AIPlayer.gold, 21)
+
+class TestNumberFlight(unittest.TestCase):
+    def setUp(self):
+        self.game = TDA(3, 10, [GoldCard(Value(5)), SilverCard(Value(3)), BlueCard(Value(2)), RedCard(Value(4)), BronzeCard(Value(1)), GreenCard(Value(6))])
+        self.game.players = [Player(30), Player(30)]
+        self.game.players[0].flight = Flight()
+        self.game.players[1].flight = Flight()
+        self.game.ante = Ante([BrassCard(Value(6)), RedCard(Value(3)), BlueCard(Value(2))])
+        self.game.players[0].flight.addCard(BlueCard(Value(6)), self.game.ante, self.game.players[0])
+        self.game.players[0].flight.addCard(RedCard(Value(6)), self.game.ante, self.game.players[0])
+        self.game.players[1].flight.addCard(SilverCard(Value(3)), self.game.ante, self.game.players[1])
+        self.game.players[1].flight.addCard(BrassCard(Value(3)), self.game.ante, self.game.players[1])
+
+    @patch("builtins.input", side_effect=["Brass 6", "Red 3", "Blue 2"])
+    def test_flight_add_card(self, mock_input):
+        self.game.players[0].flight.addCard(GreenCard(Value(6)), self.game.ante, self.game.players[0])
+        self.game.players[1].flight.addCard(RedCard(Value(3)), self.game.ante, self.game.players[1])
+
+        # Check if the players received the correct number of cards
+        self.assertEqual(self.game.players[0].gold, 36)
+        self.assertEqual(self.game.players[1].gold, 33)
+        self.assertEqual(self.game.AIPlayer.gold, 30)
+        self.assertEqual(self.game.ante.value, 9)
+        self.assertEqual(len(self.game.ante.cards), 0)
+        self.assertEqual(self.game.players[0].cardCount, 8)
+        self.assertEqual(self.game.players[1].cardCount, 7)
+
 if __name__ == "__main__":
     unittest.main()
