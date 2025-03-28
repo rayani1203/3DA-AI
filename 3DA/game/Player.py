@@ -15,19 +15,34 @@ class Player:
         self.cardCount = cardCount
         self.flight = Flight.Flight()
         self.NumToProb = {
-            1: 0.0090,
-            2: 0.0218,
-            3: 0.0448,
-            4: 0.0784,
-            5: 0.1169,
-            6: 0.1486,
-            7: 0.1610,
-            8: 0.1486,
-            9: 0.1169,
-            10: 0.0784,
-            11: 0.0448,
-            12: 0.0218,
-            13: 0.0090
+            1: 0.0361,
+            2: 0.0509,
+            3: 0.0675,
+            4: 0.0840,
+            5: 0.0982,
+            6: 0.1078,
+            7: 0.1112,
+            8: 0.1078,
+            9: 0.0982,
+            10: 0.0840,
+            11: 0.0675,
+            12: 0.0509,
+            13: 0.0361
+        }
+        self.AnteNumToProb = {
+            1: 0.09179208,
+            2: 0.12118324,
+            3: 0.14316108,
+            4: 0.15133955,
+            5: 0.14316108,
+            6: 0.12118324,
+            7: 0.09179208,
+            8: 0.06221755,
+            9: 0.03773685,
+            10: 0.02048158,
+            11: 0.00994733,
+            12: 0.00432309,
+            13: 0.00168123
         }
     
     def playTurn(self, prev: Value, game: "TDA") -> Card:
@@ -56,11 +71,14 @@ class Player:
             (payment, cards) = game.buyCards((4-self.cardCount), True)
             self.gold -= payment
             self.cardCount += len(cards)
-        nextCard = self.determineNext()
+        if not game.ante:
+            nextCard = self.determineAnte()
+        else:
+            nextCard = self.determineNext()
+            self.flight.addCard(nextCard, game.ante, self, True)
+            if nextCard.value.value <= prev.value:
+                nextCard.power(self, game, True)
         self.cardCount -= 1
-        self.flight.addCard(nextCard, game.ante, self, True)
-        if nextCard.value.value <= prev.value:
-            nextCard.power(self, game, True)
         return nextCard
 
     def determineNext(self) -> Card:
@@ -69,16 +87,20 @@ class Player:
         predictedCard = predictedColorClass(Value(predictedVal))
         return predictedCard
 
+    def determineAnte(self) -> Card:
+        predictedVal = random.choices(list(self.AnteNumToProb.keys()), weights=self.AnteNumToProb.values(), k=1)[0]
+        predictedColorClass = random.choice(list(Cards.COLOR_TO_CLASS.values()))
+        predictedCard = predictedColorClass(Value(predictedVal))
+        return predictedCard
+
     def bayesianUpdate(self):
-        stdDev = 2.7-(len(self.flight.cards)*0.5)
+        stdDev = 3.5 - (len(self.flight.cards)*.5)
         posts = []
         for prev in self.NumToProb:
             prevProb = self.NumToProb[prev]
-            likelihood = math.exp(-((prev - (self.flight.cards[-1].value.value - 1)) ** 2)/(2*(stdDev**2)))
+            likelihood = math.exp(-((prev - (self.flight.cards[-1].value.value)) ** 2)/(2*(stdDev**2)))
             unnormPost = prevProb * likelihood
             posts.append(unnormPost)
         norm = sum(posts)
         for i in range(len(posts)):
             self.NumToProb[i+1] = posts[i]/norm
-        
-        print(self.NumToProb)

@@ -11,7 +11,6 @@ class Node:
         self.totalScore = 0  # Number of wins from this node
         self.startingPoint = state.getGameScore()
         self.isAI = state.turn == state.numPlayers - 1
-        print("Turn is AI: ", state.turn, state.numPlayers-1)
 
     def isFullyExpanded(self):
         """Returns True if all possible moves have been explored."""
@@ -20,10 +19,9 @@ class Node:
         else:
             return len(self.children) == (len(TDA.Color)) or self.state.isGambitOver()
 
-    def bestChild(self, exploration_weight=5):
+    def bestChild(self, exploration_weight=1.5):
         """Selects the best child using UCB1, handling unvisited nodes properly."""
         valid_children = [child for child in self.children.values() if self.isAI]
-        print(valid_children)
         if not valid_children:
             return random.choice(list(self.children.values()))
         for child in valid_children:
@@ -31,5 +29,8 @@ class Node:
                 return child  # Always explore unvisited nodes first
 
         # Apply UCB1 formula with handling for 0 visits
+        print("Child scores:")
+        for node in valid_children:
+            print(node.totalScore / node.visits)
         return max(valid_children, key=lambda node: 
             (node.totalScore / node.visits) + exploration_weight * math.sqrt(math.log(1 + self.visits) / (1 + node.visits)))

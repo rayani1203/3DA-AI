@@ -13,13 +13,17 @@ class MCTS:
         self.timeLimit = time #seconds
 
     def search(self, state: TDA):
-        while True:
-            user = input("Simulate AI turn? (y)\n")
-            if user == "y":
-                break
-            else:
-                print("Invalid input, try again")
-        root = Node(state)
+        # while True and state.turn == state.numPlayers - 1:
+        #     user = input("Simulate AI turn? (y)\n")
+        #     if user == "y":
+        #         break
+        #     else:
+        #         print("Invalid input, try again")
+        thisState = deepcopy(state)
+        root = Node(thisState)
+
+        while root.state.turn != root.state.numPlayers - 1:
+            root.state.simTurn(None)
 
         startTime = time.time()
 
@@ -32,19 +36,19 @@ class MCTS:
 
             #Step 1: Selection
             while thisNode.isFullyExpanded() and thisNode.children:
-                print("Selecting best child...\n")
-                print()
+                # print("Selecting best child...\n")
+                # print()
                 thisNode = thisNode.bestChild()
-                parent = thisNode.parent
-                if parent:
-                    for key, child in parent.children.items():
-                        if child == thisNode:
-                            print(f"This node is a child under the key: {key}\n")
-                            break
+                # parent = thisNode.parent
+                # if parent:
+                #     for key, child in parent.children.items():
+                #         if child == thisNode:
+                #             print(f"This node is a child under the key: {key}\n")
+                #             break
             
-            print("\nAI Player's cards and flight:\n")
-            print(thisNode.state.AIPlayer.cards)
-            print(thisNode.state.AIPlayer.flight.cards)
+            # print("\nAI Player's cards and flight:\n")
+            # print(thisNode.state.AIPlayer.cards)
+            # print(thisNode.state.AIPlayer.flight.cards)
             
             #Step 2: Expansion
             if thisNode.state.turn == thisNode.state.numPlayers - 1:
@@ -57,7 +61,7 @@ class MCTS:
 
             if unexplored and not thisNode.state.isGambitOver():
                 thisCard = random.choice(unexplored)
-                print(f"Expanding with card {thisCard.color.value} {thisCard.value.value}")
+                # print(f"Expanding with card {thisCard.color.value} {thisCard.value.value}")
                 newState: TDA = deepcopy(thisNode.state)
                 newState.simTurn(thisCard)
                 newNode = Node(newState, thisNode)
@@ -78,14 +82,10 @@ class MCTS:
 
             while thisNode:
                 thisNode.visits += 1
-                print(thisNode.totalScore)
                 thisNode.totalScore += (result-thisNode.startingPoint)/(thisNode.state.playerGold * thisNode.state.numPlayers)
-                print(thisNode.totalScore)
                 thisNode = thisNode.parent
 
         print("------ search complete --------")
         print([(child, root.children[child].totalScore, root.children[child].visits) for child in root.children])
-        for move in root.children:
-            node = root.children[move]
-            print([(child, node.children[child].totalScore, node.children[child].visits) for child in node.children])
-        return max(root.children, key=lambda card: (root.children[card].totalScore / root.children[card].visits))
+        best = max(root.children, key=lambda card: (root.children[card].totalScore / root.children[card].visits))
+        return (best, root.children[best].totalScore/root.children[best].visits)

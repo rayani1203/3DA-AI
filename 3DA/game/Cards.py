@@ -212,7 +212,7 @@ class RedCard(Card):
                 if isSim:
                     (payment, cards) = game.buyCards(4, True)
                 else:
-                    (payment, cards) = game.buyCards(4)
+                    (payment, cards) = game.buyCards(4, False, True)
                 game.AIPlayer.gold -= payment
                 game.AIPlayer.cards += cards
 
@@ -334,7 +334,7 @@ class BlueCard(Card):
         print(f"{self.color} {self.value.value} dragon triggers...")
         if not isSim:
             while True:
-                addAnteInput = input("Option: Enter 'Y' if you would like to add money to the stakes, and 'N' if you'd like 1 from each opponent")
+                addAnteInput = input("Option: Enter 'Y' if you would like to add money to the stakes, and 'N' if you'd like 1 from each opponent\n")
                 if addAnteInput.capitalize() == 'Y':
                     addAnte = True
                 elif addAnteInput.capitalize() == 'N':

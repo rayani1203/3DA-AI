@@ -322,13 +322,15 @@ class TestBlueCard(unittest.TestCase):
         self.assertEqual(self.game.AIPlayer.gold, 12)
 
 class TestPlayerPrediction(unittest.TestCase):
-    @patch("builtins.input", side_effect=["Gold 5", "Silver 3", "Gold 7", "Silver 7"])
+    @patch("builtins.input", side_effect=["Gold 5", "Silver 3", "Gold 7", "Silver 10"])
     def setUp(self, mock_input):
         self.game = MagicMock()
         self.game.players = [Player(10), Player(10)]
         
         # Mock player turns to add cards to their flights
         self.game.players[0].playTurn(Value(2), self.game)
+        self.game.players[0].playTurn(Value(2), self.game)
+        self.game.players[1].playTurn(Value(2), self.game)
         self.game.players[1].playTurn(Value(2), self.game)
 
     def test_player_determine_next(self):
@@ -382,6 +384,34 @@ class TestNumberFlight(unittest.TestCase):
         self.assertEqual(len(self.game.ante.cards), 0)
         self.assertEqual(self.game.players[0].cardCount, 8)
         self.assertEqual(self.game.players[1].cardCount, 7)
+
+class TestPurchasing(unittest.TestCase):
+    def setUp(self):
+        self.game = TDA(3, 10, [BlueCard(Value(5)), RedCard(Value(6)), BlueCard(Value(2)), RedCard(Value(4)), BronzeCard(Value(1)), GreenCard(Value(6))])
+        self.game.players = [Player(30), Player(30)]
+        self.game.players[0].cardCount = 2
+        self.game.players[1].cardCount = 1
+        self.game.players[1].gold = 20
+        self.game.players[1].flight.total = 5
+        self.game.players[0].flight.total = 3
+    
+    def test_buy_on_turn(self):
+        self.game.players[1].simTurn(Value(2), self.game)
+        self.assertTrue(self.game.players[1].gold < 20)
+        self.assertTrue(self.game.players[1].cardCount == 3)
+    
+    def test_buy_out_of_turn(self):
+        self.game.AIPlayer.simTurn(self.game, Value(7), RedCard(Value(6)))
+        self.assertTrue(self.game.players[1].gold < 20)
+        self.assertTrue(self.game.players[1].cardCount == 4)
+    
+    def test_ai_buy_in_turn(self):
+        self.assertTrue(self.game.AIPlayer.gold == 30)
+        self.game.AIPlayer.cards = self.game.AIPlayer.cards[:1]
+        self.game.AIPlayer.simTurn(self.game, Value(7), GoldCard(Value(5)))
+        self.assertTrue(self.game.AIPlayer.gold < 30)
+        self.assertEqual(len(self.game.AIPlayer.cards), 4)
+
 
 if __name__ == "__main__":
     unittest.main()
