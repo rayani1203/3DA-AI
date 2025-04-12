@@ -12,7 +12,7 @@ Three-Dragon Ante is a poker-style game where players:
 - Trigger **powers** based on the type and color of cards
 - Win or lose gold based on total flight strength and triggered effects
 
-The game continues across multiple gambits until a player is eliminated or a winning condition is met.
+The game continues across multiple gambits until a player is eliminated (runs out of gold)
 
 ---
 
@@ -22,7 +22,6 @@ The AI plays as one of the players in the game and makes decisions based on simu
 - Choose which **card to ante**
 - Decide whether to **give up a card or gold** when prompted by card effects
 - Select which **card to play** during its turn
-- **Predict opponent card strength** using a Bayesian model based on cards already played
 
 ---
 
@@ -52,7 +51,7 @@ All simulations **deep copy** this state to avoid side effects.
 
 ### 📊 Opponent Modeling
 
-Opponent card strength is estimated using Bayesian updates:
+Opponent future card strength is estimated using Bayesian updates:
 - Initial distribution assumes a mean of 7 (values from 1 to 13)
 - Each played card updates the posterior
 - AI uses this to predict likely future card values for opponents
@@ -98,7 +97,7 @@ To run a full AI game simulation:
 python3 game.py
 ```
 
-To run any tests or debug gameplay behavior:
+To run unit tests:
 
 ```bash
 python3 gameTests.py
