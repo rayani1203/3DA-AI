@@ -19,7 +19,7 @@ class Node:
         else:
             return len(self.children) == (len(TDA.Color)) or self.state.isGambitOver()
 
-    def bestChild(self, exploration_weight=1.5):
+    def bestChild(self, exploration_weight=2.2):
         """Selects the best child using UCB1, handling unvisited nodes properly."""
         valid_children = [child for child in self.children.values() if self.isAI]
         if not valid_children:

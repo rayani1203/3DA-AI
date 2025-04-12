@@ -58,11 +58,11 @@ class Player:
                 value = Value(int(valueInput))
                 thisCard: Card = Cards.COLOR_TO_CLASS[color](value)
                 self.cardCount -= 1
-                self.flight.addCard(thisCard, game.ante, self)
+                self.flight.addCard(thisCard, game.ante, self, False, prev)
                 self.bayesianUpdate()
                 if thisCard.value.value <= prev.value:
                     thisCard.power(self, game)
-                return thisCard
+                return self.flight.cards[-1]
             except Exception as e:
                 print(f"Invalid input, try again\nError: {e}")
     
@@ -75,7 +75,7 @@ class Player:
             nextCard = self.determineAnte()
         else:
             nextCard = self.determineNext()
-            self.flight.addCard(nextCard, game.ante, self, True)
+            self.flight.addCard(nextCard, game.ante, self, True, prev)
             if nextCard.value.value <= prev.value:
                 nextCard.power(self, game, True)
         self.cardCount -= 1

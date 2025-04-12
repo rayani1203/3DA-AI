@@ -24,7 +24,10 @@ class TDA:
         return min(self.players, key=lambda player:player.gold).gold < 0
 
     def isGambitOver(self):
-        if len(self.AIPlayer.flight.cards) < 3:
+        if any(len(player.flight.cards) < 3 for player in self.players) or len(self.AIPlayer.flight.cards) < 3:
+            return False
+        currLen = len(self.AIPlayer.flight.cards)
+        if any(len(player.flight.cards) != currLen for player in self.players):
             return False
         sums = [self.AIPlayer.flight.total]
         for player in self.players:
@@ -91,14 +94,13 @@ class TDA:
     def playRound(self, roundNum: int):
         print(f"Beginning round {roundNum}, starting with player {self.turn}")
         turns = 0
-        thisRound : List[Card] = [None] * self.numPlayers
         self.prev = Value(13)
         while turns < self.numPlayers:
             playedCard = self.playTurn()
             self.prev = playedCard.value
             turns += 1
-            thisRound[self.turn] = playedCard
             self.turn = (self.turn + 1)%self.numPlayers
+        thisRound = [player.flight.cards[-1] for player in self.players] + [self.AIPlayer.flight.cards[-1]]
         newStart = self.findStart(thisRound)
         if newStart != -1:
             self.turn = newStart
@@ -109,6 +111,7 @@ class TDA:
             newPrev = self.players[self.turn].playTurn(self.prev, self)
         else:
             newPrev = self.AIPlayer.playTurn(self, self.prev)
+        self.printStatus()
         return newPrev
 
     def simTurn(self, choice: Card):
@@ -159,6 +162,11 @@ class TDA:
         self.doColorFlights()
 
         print()
+        flights = [player.flight.total for player in self.players]
+        print(f"Flights: {flights}")
+        aiflight = [(card.color.value, card.value.value) for card in self.AIPlayer.flight.cards]
+        print(f"AI flight: {aiflight}")
+        print(f"{self.AIPlayer.flight.total}")
 
         winner = None
         highest = 0

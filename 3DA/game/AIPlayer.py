@@ -57,10 +57,10 @@ class AIPlayer:
                 self.cards.remove(card)
                 break
         assert len(self.cards) == prevAmount - 1
-        self.flight.addCard(playCard, game.ante, self)
+        self.flight.addCard(playCard, game.ante, self, False, prev)
         if playCard.value.value <= prev.value:
             playCard.power(self, game)
-        return playCard
+        return self.flight.cards[-1]
 
     def simTurn(self, game: "TDA", prev: Value, chosen: Card) -> Card:
         if len(self.cards) <= 1:
@@ -75,13 +75,12 @@ class AIPlayer:
                 self.cards.remove(card)
                 break
         assert len(self.cards) == initLen - 1
-        self.flight.addCard(chosen, game.ante, self, True)
+        self.flight.addCard(chosen, game.ante, self, True, prev)
         if chosen.value.value <= prev.value:
             chosen.power(self, game, True)
         return chosen
     
     def decideCard(self, game: "TDA", value: Value, above: bool, isSim: bool = False):
-        """***TODO*** decide card / coin"""
         options = []
         if not isSim:
             decisionMCTS = MCTS(100000, 10)

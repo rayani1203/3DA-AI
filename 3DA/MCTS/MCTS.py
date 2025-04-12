@@ -13,15 +13,17 @@ class MCTS:
         self.timeLimit = time #seconds
 
     def search(self, state: TDA):
-        # while True and state.turn == state.numPlayers - 1:
-        #     user = input("Simulate AI turn? (y)\n")
-        #     if user == "y":
-        #         break
-        #     else:
-        #         print("Invalid input, try again")
+        while True and state.turn == state.numPlayers - 1:
+            user = input("Simulate AI turn? (y)\n")
+            if user == "y":
+                break
+            else:
+                print("Invalid input, try again")
         thisState = deepcopy(state)
         root = Node(thisState)
 
+        if root.state.turn != root.state.numPlayers - 1:
+            root.state.turn += 1
         while root.state.turn != root.state.numPlayers - 1:
             root.state.simTurn(None)
 
@@ -36,19 +38,19 @@ class MCTS:
 
             #Step 1: Selection
             while thisNode.isFullyExpanded() and thisNode.children:
-                # print("Selecting best child...\n")
-                # print()
+                print("Selecting best child...\n")
+                print()
                 thisNode = thisNode.bestChild()
-                # parent = thisNode.parent
-                # if parent:
-                #     for key, child in parent.children.items():
-                #         if child == thisNode:
-                #             print(f"This node is a child under the key: {key}\n")
-                #             break
+                parent = thisNode.parent
+                if parent:
+                    for key, child in parent.children.items():
+                        if child == thisNode:
+                            print(f"This node is a child under the key: {key}\n")
+                            break
             
-            # print("\nAI Player's cards and flight:\n")
-            # print(thisNode.state.AIPlayer.cards)
-            # print(thisNode.state.AIPlayer.flight.cards)
+            print("\nAI Player's cards and flight:\n")
+            print(thisNode.state.AIPlayer.cards)
+            print(thisNode.state.AIPlayer.flight.cards)
             
             #Step 2: Expansion
             if thisNode.state.turn == thisNode.state.numPlayers - 1:
@@ -61,7 +63,7 @@ class MCTS:
 
             if unexplored and not thisNode.state.isGambitOver():
                 thisCard = random.choice(unexplored)
-                # print(f"Expanding with card {thisCard.color.value} {thisCard.value.value}")
+                print(f"Expanding with card {thisCard.color.value} {thisCard.value.value}")
                 newState: TDA = deepcopy(thisNode.state)
                 newState.simTurn(thisCard)
                 newNode = Node(newState, thisNode)
@@ -71,21 +73,29 @@ class MCTS:
             #Step 3: Simulation
             simState : TDA = deepcopy(thisNode.state)
             while not simState.isGambitOver():
+                print(f"Simulating player {simState.turn}...\n")
                 validCards = simState.AIPlayer.cards
                 simCard = random.choice(validCards)
                 simState.simTurn(simCard)
+            print("Simulation complete...\n")
             simState.endGambit()
             
             #Step 4: Backpropagation
             result = simState.getGameScore()
-            originalPlayer = root.state.AIPlayer
+            print("Backpropagating...\n")
+            print(f"Result: {result}")
 
             while thisNode:
                 thisNode.visits += 1
+                print("Init: ", thisNode.startingPoint)
+                print("Final: ", result)
+                print(f"Incrementng by: {(result-thisNode.startingPoint)/(thisNode.state.playerGold * thisNode.state.numPlayers)}")
                 thisNode.totalScore += (result-thisNode.startingPoint)/(thisNode.state.playerGold * thisNode.state.numPlayers)
                 thisNode = thisNode.parent
 
         print("------ search complete --------")
         print([(child, root.children[child].totalScore, root.children[child].visits) for child in root.children])
+        if not root.children:
+            return (None, 0)
         best = max(root.children, key=lambda card: (root.children[card].totalScore / root.children[card].visits))
         return (best, root.children[best].totalScore/root.children[best].visits)

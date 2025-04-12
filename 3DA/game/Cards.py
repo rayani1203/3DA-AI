@@ -5,10 +5,9 @@ from .Player import Player
 from .AIPlayer import AIPlayer
 import random
 
-def randomCard():
+def randomCard(inputValue: Value = Value(6)) -> Card:
     color = random.choice(list(Color))
-    value = random.choice(list(Value))
-    return COLOR_TO_CLASS[color](value)
+    return COLOR_TO_CLASS[color](inputValue)
 
 # Subclasses for each color
 class GoldCard(Card):
@@ -35,7 +34,7 @@ class GoldCard(Card):
                     except Exception:
                         print("Invalid input, try again\n")
                 else:
-                    player.cards.append(randomCard())
+                    player.cards.append(randomCard(Value(6)))
 
 class SilverCard(Card):
     def __init__(self, value: Value):
@@ -61,7 +60,7 @@ class SilverCard(Card):
                     except Exception:
                         print("Invalid input, try again\n")
             else:
-                game.AIPlayer.cards.append(randomCard())
+                game.AIPlayer.cards.append(randomCard(Value(6)))
 
 class CopperCard(Card):
     def __init__(self, value: Value):
@@ -82,8 +81,10 @@ class CopperCard(Card):
                 except Exception:
                     print("Invalid input, try again\n")
         else:
-            newCard = randomCard()
+            newCard = COLOR_TO_CLASS[random.choice(list(Color))](Value(6))
         player.flight.cards.pop(-1)
+        player.flight.total -= self.value.value
+        player.flight.goods -= 1
         player.flight.addCard(newCard, game.ante, player, isSim)
         newCard.power(player, game, isSim)
 
@@ -136,7 +137,7 @@ class BrassCard(Card):
             (gives, card) = card_coin_choice(game.players[idx], game, self.value, True, toAI)
         else:
             gives = random.choice([True, False])
-            card = randomCard()
+            card = randomCard(Value(max(self.value.value//2, 1)))
         if gives:
             if isinstance(player, Player):
                 player.cardCount += 1
@@ -275,7 +276,7 @@ class GreenCard(Card):
             (gives, card) = card_coin_choice(game.players[idx], game, self.value, False, toAI)
         else:
             gives = random.choice([True, False])
-            card = randomCard()
+            card = randomCard(Value(max(self.value.value//2, 1)))
         if gives:
             if isinstance(player, Player):
                 player.cardCount += 1
@@ -394,8 +395,6 @@ def card_coin_choice(receiver: Union[Player, AIPlayer], game:TDA, value: Value, 
                             receiver.gold -= payment
                             receiver.cardCount += len(cards)
                         return (True, cardToGive)
-                    except StopIteration:
-                        print("Card not found in player's hand, try again\n")
                     except Exception:
                         print("Invalid input, try again\n")
             else:

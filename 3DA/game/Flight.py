@@ -13,14 +13,15 @@ class Flight:
         self.evils = 0
         self.value_count = defaultdict(int)
     
-    def addCard(self, card: Card, ante: Ante, player: Union[Player.Player, AIPlayer.AIPlayer], isSim: bool = False):
+    def addCard(self, card: Card, ante: Ante, player: Union[Player.Player, AIPlayer.AIPlayer], isSim: bool = False, prev: Value = Value(13)):
         self.cards.append(card)
         self.total += card.value.value
         if card.good:
             self.goods += 1
         else:
             self.evils += 1   
-        self.value_count[card.value.value] += 1
+        if not (card.color == Color.Copper and card.value.value <= prev.value):
+            self.value_count[card.value.value] += 1
         if self.value_count[card.value.value] == 3:
             goldToAdd = card.value.value
             player.gold += goldToAdd
